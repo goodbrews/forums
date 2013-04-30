@@ -2,8 +2,8 @@ require "#{Rails.root}/lib/discourse_redis"
 
 $redis = DiscourseRedis.new
 
-if Rails.env.development? && !ENV['DO_NOT_FLUSH_REDIS']
-  puts "Flushing redis (development mode)"
+if Rails.env.development? && ENV['FLUSH_REDIS']
+  puts "Flushing redis"
   $redis.flushall
 end
 

@@ -22,9 +22,12 @@ dump.rdb
 
 /public/assets/*
 
+# Ignore sensitive files
+config/environments/production.rb
+config/initializers/secret_token.rb
 config/database.yml
+config/newrelic.yml
 config/redis.yml
-config/discourse.pill
 
 # Ignore the default SQLite database and db dumps
 /db/*.sqlite3
