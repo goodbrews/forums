@@ -62,11 +62,11 @@ namespace :deploy do
     put  File.read("config/redis.yml"), "#{shared_path}/config/redis.yml"
     put  File.read("config/environments/production.rb"), "#{shared_path}/config/environments/production.rb"
     put  File.read("config/initializers/secret_token.rb"), "#{shared_path}/config/initializers/secret_token.rb"
+    sudo "ln -nfs #{release_path}/config/nginx.conf /etc/nginx/sites-enabled/#{application}"
     puts "Now edit the config files in #{shared_path}."
   end
 
   task :symlink_config, roles: :app do
-    sudo "ln -nfs #{release_path}/config/nginx.conf /etc/nginx/sites-enabled/#{application}"
     run  "ln -nfs #{shared_path}/config/database.yml #{release_path}/config/database.yml"
     run  "ln -nfs #{shared_path}/config/newrelic.yml #{release_path}/config/newrelic.yml"
     run  "ln -nfs #{shared_path}/config/redis.yml #{release_path}/config/redis.yml"
