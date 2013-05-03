@@ -12,14 +12,13 @@ set :scm, :git
 ssh_options[:forward_agent] = true
 
 # General Settings
-set :use_sudo, false
 set :deploy_type, :deploy
 default_run_options[:pty] = true
 ssh_options[:keys] = [File.join(ENV['HOME'], '.ssh', 'goodbrews')]
-set :bluepill_path, '/home/goodbrews/.rbenv/shims/bluepill'
 
 # Server Settings
 set :user, 'goodbrews'
+set :use_sudo, false
 set :rails_env, :production
 set :rbenv_ruby_version, '2.0.0-p0'
 
@@ -96,14 +95,6 @@ end
 after  "deploy:stop",    "clockwork:stop"
 after  "deploy:start",   "clockwork:start"
 before "deploy:restart", "clockwork:restart"
-
-namespace :db do
-  desc "seed the database for the first time"
-  task :seed, :roles => [:db] do
-    sudo "cd #{current_path} && bundle exec rake db:migrate"
-    sudo "cd #{current_path} && bundle exec rake db:seed_fu"
-  end
-end
 
 after  'deploy:update', 'newrelic:notice_deployment'
 after  'deploy:update_code', 'deploy:migrate'
