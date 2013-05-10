@@ -58,10 +58,11 @@ namespace :deploy do
     run  "mkdir -p #{shared_path}/sockets"
     put  File.read("config/database.yml"), "#{shared_path}/config/database.yml"
     put  File.read("config/newrelic.yml"), "#{shared_path}/config/newrelic.yml"
-    put  File.read("config/redis.yml"), "#{shared_path}/config/redis.yml"
+    put  File.read("config/nginx.conf"),   "#{shared_path}/config/nginx.conf"
+    put  File.read("config/redis.yml"),    "#{shared_path}/config/redis.yml"
     put  File.read("config/environments/production.rb"), "#{shared_path}/config/environments/production.rb"
     put  File.read("config/initializers/secret_token.rb"), "#{shared_path}/config/initializers/secret_token.rb"
-    sudo "ln -nfs #{release_path}/config/nginx.conf /etc/nginx/sites-enabled/#{application}"
+    sudo "ln -nfs #{shared_path}/config/nginx.conf /etc/nginx/sites-enabled/#{application}"
     puts "Now edit the config files in #{shared_path}."
   end
 
