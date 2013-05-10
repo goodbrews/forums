@@ -58,6 +58,7 @@ class Guardian
   end
   alias :can_move_posts? :can_moderate?
   alias :can_see_flags? :can_moderate?
+  alias :can_send_activation_email? :can_moderate?
 
   # Can the user create a topic in the forum
   def can_create?(klass, parent=nil)
@@ -105,6 +106,7 @@ class Guardian
     return false if target.approved?
     @user.staff?
   end
+  alias :can_activate? :can_approve?
 
   def can_ban?(user)
     return false if user.blank?
@@ -112,6 +114,7 @@ class Guardian
     return false if user.admin?
     true
   end
+  alias :can_deactivate? :can_ban?
 
   def can_clear_flags?(post)
     return false if @user.blank?
@@ -138,15 +141,16 @@ class Guardian
   def can_revoke_moderation?(moderator)
     return false unless is_admin?
     return false if moderator.blank?
-    return false if @user.id == moderator.id
+    return false if @user.id == moderator.id && !is_admin?
+    return false unless moderator.moderator?
     true
   end
 
   def can_grant_moderation?(user)
-    return false unless is_admin? 
-    return false if user.blank?
-    return false if @user.id == user.id
-    return false if user.staff?
+    return false unless is_admin?
+    return false unless user
+    return false if @user.id == user.id && !is_admin?
+    return false if user.moderator?
     true
   end
 

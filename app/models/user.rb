@@ -491,6 +491,21 @@ class User < ActiveRecord::Base
     email_tokens.where(email: email, confirmed: true).present? || email_tokens.empty?
   end
 
+  def activate
+    email_token = self.email_tokens.active.first
+    if email_token
+      EmailToken.confirm(email_token.token)
+    else
+      self.active = true
+      save
+    end
+  end
+
+  def deactivate
+    self.active = false
+    save
+  end
+
   def treat_as_new_topic_start_date
     duration = new_topic_duration_minutes || SiteSetting.new_topic_duration_minutes
     case duration
@@ -549,7 +564,7 @@ class User < ActiveRecord::Base
   end
 
   def secure_category_ids
-    cats = self.moderator? ? Category.select(:id).where(:secure, true) : secure_categories.select('categories.id')
+    cats = self.staff? ? Category.select(:id).where(secure: true) : secure_categories.select('categories.id')
     cats.map{|c| c.id}
   end
 

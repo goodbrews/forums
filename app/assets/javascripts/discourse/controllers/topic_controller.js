@@ -83,6 +83,7 @@ Discourse.TopicController = Discourse.ObjectController.extend({
     if (!modalController) return;
 
     modalController.show(Discourse.MoveSelectedView.create({
+      topicController: this,
       topic: this.get('content'),
       selectedPosts: this.get('selectedPosts')
     }));
@@ -90,13 +91,12 @@ Discourse.TopicController = Discourse.ObjectController.extend({
 
   deleteSelected: function() {
     var topicController = this;
-    return bootbox.confirm(Em.String.i18n("post.delete.confirm", {
-      count: this.get('selectedCount')
-    }), function(result) {
+    return bootbox.confirm(Em.String.i18n("post.delete.confirm", { count: this.get('selectedCount')}), function(result) {
       if (result) {
         var selectedPosts = topicController.get('selectedPosts');
         Discourse.Post.deleteMany(selectedPosts);
         topicController.get('content.posts').removeObjects(selectedPosts);
+        topicController.toggleMultiSelect();
       }
     });
   },

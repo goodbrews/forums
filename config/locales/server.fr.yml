@@ -53,6 +53,17 @@ fr:
   rss_topics_in_category: "Flux RSS des discussions de la catégorie '%{category}'"
   author_wrote: "%{author} a écrit :"
 
+  groups:
+    default_names:
+      admins: "admins"
+      moderators: "moderateurs"
+      staff: "staff"
+      trust_level_1: "trust_level_1"
+      trust_level_2: "trust_level_2"
+      trust_level_3: "trust_level_3"
+      trust_level_4: "trust_level_4"
+      trust_level_5: "trust_level_5"
+
   education:
     until_posts:
       one: "message"
@@ -346,18 +357,18 @@ fr:
     top_referrers:
       title: Meilleurs référants
       xaxis: Utilisateurs
-      num_visits: Visites
+      num_clicks: Clics
       num_topics: Discussions
     top_traffic_sources:
       title: Meilleures sources de traffic
       xaxis: Domaine
-      num_visits: Visites
+      num_clicks: Clics
       num_topics: Discussions
       num_users: Utilisateurs
     top_referred_topics:
       title: Discussions les plus référencées
       xaxis: Discussion
-      num_visits: Visites
+      num_clicks: Clics
 
   dashboard:
     rails_env_warning: "Votre serveur fonctionne dans l'environnement de %{env}."
@@ -559,7 +570,7 @@ fr:
     min_body_similar_length: "La taille minimale du message avant que l'on vérifie l'existence de discussions identiques"
 
     category_colors: "Une liste de couleurs autorisées pour les catégories (au format hexadécimal, séparés par un |)"
-    max_upload_size_kb: "La taille maximum des fichiers que les utilisateurs peuvent envoyer en Kb - assurez-vous de configurer également cette limite dans nginx (client_max_body_size) / apache ou votre proxy."
+    max_upload_size_kb: "La taille maximum des fichiers que les utilisateurs peuvent envoyer en kB - assurez-vous de configurer également cette limite dans nginx (client_max_body_size) / apache ou votre proxy."
     max_similar_results: "Nombre de discussions similaires à afficher lorsqu'un utilisateur est en train de créer une nouvelle discussion"
 
     title_prettify: "Corrige les coquilles les plus communes dans les titres (intégralité du titre en majuscule, première lettre en minuscule, de multiples ! et ?, un . inutile à la fin, etc.)"
