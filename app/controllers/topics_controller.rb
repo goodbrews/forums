@@ -15,7 +15,8 @@ class TopicsController < ApplicationController
                                           :unmute,
                                           :set_notifications,
                                           :move_posts,
-                                          :clear_pin]
+                                          :clear_pin,
+                                          :autoclose]
 
   before_filter :consider_user_for_promotion, only: :show
 
@@ -97,6 +98,16 @@ class TopicsController < ApplicationController
     toggle_mute(false)
   end
 
+  def autoclose
+    requires_parameter(:auto_close_days)
+    @topic = Topic.where(id: params[:topic_id].to_i).first
+    guardian.ensure_can_moderate!(@topic)
+    @topic.auto_close_days = params[:auto_close_days]
+    @topic.auto_close_user = current_user
+    @topic.save
+    render nothing: true
+  end
+
   def destroy
     topic = Topic.where(id: params[:id]).first
     guardian.ensure_can_delete!(topic)
@@ -127,18 +138,22 @@ class TopicsController < ApplicationController
   end
 
   def move_posts
-    requires_parameters(:title, :post_ids)
+    requires_parameters(:post_ids)
+
     topic = Topic.where(id: params[:topic_id]).first
     guardian.ensure_can_move_posts!(topic)
 
-    # Move the posts
-    new_topic = topic.move_posts(current_user, params[:title], params[:post_ids].map {|p| p.to_i})
+    args = {}
+    args[:title] = params[:title] if params[:title].present?
+    args[:destination_topic_id] = params[:destination_topic_id].to_i if params[:destination_topic_id].present?
 
-    if new_topic.present?
-      render json: {success: true, url: new_topic.relative_url}
+    dest_topic = topic.move_posts(current_user, params[:post_ids].map {|p| p.to_i}, args)
+    if dest_topic.present?
+      render json: {success: true, url: dest_topic.relative_url}
     else
       render json: {success: false}
     end
+
   end
 
   def clear_pin
