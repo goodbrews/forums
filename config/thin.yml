@@ -13,3 +13,4 @@ require: []
 wait: 30
 servers: 4
 daemonize: true
+onebyone: true
