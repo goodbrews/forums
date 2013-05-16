@@ -9,7 +9,7 @@ gem 'barber', '0.3.0'
 
 gem 'vestal_versions', git: 'https://github.com/zhangyuan/vestal_versions'
 
-gem 'message_bus', path: 'vendor/gems/message_bus'
+gem 'message_bus'
 gem 'rails_multisite', path: 'vendor/gems/rails_multisite'
 gem 'simple_handlebars_rails', path: 'vendor/gems/simple_handlebars_rails'
 
@@ -105,8 +105,8 @@ group :test, :development do
   gem 'guard-spork', require: false
   gem 'jasminerice'
   gem 'mocha', require: false
-  gem 'rb-fsevent', require: false
-  gem 'rb-inotify', '~> 0.9', require: false
+  gem 'rb-fsevent', require: RUBY_PLATFORM =~ /darwin/i ? 'rb-fsevent' : false
+  gem 'rb-inotify', '~> 0.9', require: RUBY_PLATFORM =~ /linux/i ? 'rb-inotify' : false
   gem 'rspec-rails', require: false
   gem 'shoulda', require: false
   gem 'simplecov', require: false
