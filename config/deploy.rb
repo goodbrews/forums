@@ -20,7 +20,7 @@ ssh_options[:keys] = [File.join(ENV['HOME'], '.ssh', 'goodbrews')]
 set :user, 'goodbrews'
 set :use_sudo, false
 set :rails_env, :production
-set :rbenv_ruby_version, '2.0.0-p0'
+set :rbenv_ruby_version, '2.0.0-p195'
 
 role :app, 'forums.goodbre.ws', primary: true
 role :db,  'forums.goodbre.ws', primary: true
