@@ -15,6 +15,7 @@ class TopicsController < ApplicationController
                                           :unmute,
                                           :set_notifications,
                                           :move_posts,
+                                          :merge_topic,
                                           :clear_pin,
                                           :autoclose]
 
@@ -24,7 +25,10 @@ class TopicsController < ApplicationController
   caches_action :avatar, cache_path: Proc.new {|c| "#{c.params[:post_number]}-#{c.params[:topic_id]}" }
 
   def show
-    create_topic_view
+    opts = params.slice(:username_filters, :best_of, :page, :post_number, :posts_before, :posts_after, :best)
+    @topic_view = TopicView.new(params[:id] || params[:topic_id], current_user, opts)
+
+    raise Discourse::NotFound unless @topic_view.posts.present? || (request.format && request.format.json?)
 
     anonymous_etag(@topic_view.topic) do
       redirect_to_correct_topic && return if slugs_do_not_match
@@ -137,6 +141,20 @@ class TopicsController < ApplicationController
     render json: success_json
   end
 
+  def merge_topic
+    requires_parameters(:destination_topic_id)
+
+    topic = Topic.where(id: params[:topic_id]).first
+    guardian.ensure_can_move_posts!(topic)
+
+    dest_topic = topic.move_posts(current_user, topic.posts.pluck(:id), destination_topic_id: params[:destination_topic_id].to_i)
+    if dest_topic.present?
+      render json: {success: true, url: dest_topic.relative_url}
+    else
+      render json: {success: false}
+    end
+  end
+
   def move_posts
     requires_parameters(:post_ids)
 
@@ -153,7 +171,6 @@ class TopicsController < ApplicationController
     else
       render json: {success: false}
     end
-
   end
 
   def clear_pin
@@ -181,11 +198,6 @@ class TopicsController < ApplicationController
   end
 
   private
-
-  def create_topic_view
-    opts = params.slice(:username_filters, :best_of, :page, :post_number, :posts_before, :posts_after, :best)
-    @topic_view = TopicView.new(params[:id] || params[:topic_id], current_user, opts)
-  end
 
   def toggle_mute(v)
     @topic = Topic.where(id: params[:topic_id].to_i).first

@@ -5,7 +5,7 @@
   <div class='composer-popup-container'>
     <div id='new-user-education' class='composer-popup' style='display: none'>
       <a href='#' {{action closeEducation}} class='close'><i class='icon icon-remove-sign'></i></a>
-      {{{controller.educationContents}}}
+      {{{educationContents}}}
     </div>
 
     <div id='similar-topics' class='composer-popup' style='display: none'>
@@ -13,7 +13,7 @@
       <h3>{{i18n composer.similar_topics}}<h3>
 
       <ul class='topics'>
-        {{#each controller.similarTopics}}
+        {{#each similarTopics}}
           <li>{{{topicLink this}}} <span class='posts-count'>({{{i18n topic.filters.n_posts count="posts_count"}}})</span></li>
         {{/each}}
       </ul>
@@ -32,11 +32,11 @@
             {{#if content.creatingPrivateMessage}}
               {{view Discourse.UserSelector topicIdBinding="controller.controllers.topic.content.id" excludeCurrentUser="true" id="private-message-users" class="span8" placeholderKey="composer.users_placeholder" tabindex="1" usernamesBinding="content.targetUsernames"}}
             {{/if}}
-            {{view Discourse.TextField valueBinding="content.title" tabindex="2" id="reply-title" maxlength="255" class="span8" placeholderKey="composer.title_placeholder"}}
+            {{textField value=content.title tabindex="2" id="reply-title" maxlength="255" class="span8" placeholderKey="composer.title_placeholder"}}
             {{#unless content.creatingPrivateMessage}}
               {{view Discourse.ComboboxViewCategory valueAttribute="name" contentBinding="Discourse.site.categories" valueBinding="content.categoryName"}}
               {{#if content.archetype.hasOptions}}
-                <button class='btn' {{action showOptions target="controller"}}>{{i18n topic.options}}</button>
+                <button class='btn' {{action showOptions}}>{{i18n topic.options}}</button>
               {{/if}}
               {{#if content.showAdminOptions}}
                 <button {{action toggleAdminOptions target="view"}} class="btn no-text" title='{{i18n composer.admin_options_title}}'><i class="icon icon-wrench"></i></button>
@@ -45,12 +45,7 @@
           </div>
 
           <div class="admin-options-form">
-            <div class="auto-close-fields">
-              <i class="icon icon-time"></i>
-              {{i18n composer.auto_close_label}}
-              {{view Discourse.TextField valueBinding="content.auto_close_days" maxlength="5"}}
-              {{i18n composer.auto_close_units}}
-            </div>
+            {{view Discourse.AutoCloseFormView autoCloseDaysBinding="content.auto_close_days"}}
           </div>
         {{/if}}
 
@@ -60,10 +55,10 @@
             {{view Discourse.NotifyingTextArea parentBinding="view" tabindex="3" valueBinding="content.reply" id="wmd-input" placeholderKey="composer.reply_placeholder"}}
           </div>
           <div class='preview-wrapper'>
-            <div id='wmd-preview' {{bindAttr class="controller.hidePreview:hidden"}}></div>
+            <div id='wmd-preview' {{bindAttr class="hidePreview:hidden"}}></div>
           </div>
           {{#if Discourse.currentUser}}
-            <a href="#" {{action togglePreview target="controller"}} class='toggle-preview'>{{{content.toggleText}}}</a>
+            <a href="#" {{action togglePreview}} class='toggle-preview'>{{{content.toggleText}}}</a>
             <div id='draft-status'></div>
             {{#if view.loadingImage}}
               <div id="image-uploading">
@@ -75,8 +70,8 @@
 
         {{#if Discourse.currentUser}}
           <div class='submit-panel'>
-            <button {{action save target="controller"}} tabindex="4" {{bindAttr disabled="content.cantSubmitPost"}} class='btn btn-primary create'>{{view.content.saveText}}</button>
-            <a href='#' {{action cancel target="controller"}} class='cancel' tabindex="4">{{i18n cancel}}</a>
+            <button {{action save}} tabindex="4" {{bindAttr disabled="content.cantSubmitPost"}} class='btn btn-primary create'>{{view.content.saveText}}</button>
+            <a href='#' {{action cancel}} class='cancel' tabindex="4">{{i18n cancel}}</a>
           </div>
         {{/if}}
 
@@ -86,7 +81,7 @@
         <div class='span24'>
           <div class='saving-text'>
             {{#if content.createdPost}}
-              {{i18n composer.saved}} <a class='permalink' href="{{unbound createdPost.url}}" {{action viewNewReply target="controller"}}>{{i18n composer.view_new_post}}</a>
+              {{i18n composer.saved}} <a class='permalink' href="{{unbound createdPost.url}}" {{action viewNewReply}}>{{i18n composer.view_new_post}}</a>
             {{else}}
               {{i18n composer.saving}}
             {{/if}}

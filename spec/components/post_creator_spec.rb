@@ -32,6 +32,11 @@ describe PostCreator do
 
     context 'success' do
 
+      it "doesn't return true for spam" do
+        creator.create
+        creator.spam?.should be_false
+      end
+
       it 'generates the correct messages for a secure topic' do
 
         admin = Fabricate(:admin)
@@ -60,7 +65,6 @@ describe PostCreator do
                                                    ].sort
         admin_ids = [Group[:admins].id]
         messages.any?{|m| m.group_ids != admin_ids}.should be_false
-
       end
 
       it 'generates the correct messages for a normal topic' do
@@ -187,6 +191,25 @@ describe PostCreator do
 
   end
 
+
+  context "host spam" do
+
+    let!(:topic) { Fabricate(:topic, user: user) }
+    let(:basic_topic_params) { { raw: 'test reply', topic_id: topic.id, reply_to_post_number: 4} }
+    let(:creator) { PostCreator.new(user, basic_topic_params) }
+
+    before do
+      Post.any_instance.expects(:has_host_spam?).returns(true)
+    end
+
+    it "does not create the post" do
+      creator.create
+      creator.errors.should be_present
+      creator.spam?.should be_true
+    end
+
+  end
+
   # more integration testing ... maximise our testing
   context 'existing topic' do
     let!(:topic) { Fabricate(:topic, user: user) }
@@ -259,6 +282,28 @@ describe PostCreator do
       post.topic.subtype.should == TopicSubtype.user_to_user
       target_user1.notifications.count.should == 1
       target_user2.notifications.count.should == 1
+    end
+  end
+
+  context 'setting created_at' do
+    created_at = 1.week.ago
+    let(:topic) do
+      PostCreator.create(user,
+                         raw: 'This is very interesting test post content',
+                         title: 'This is a very interesting test post title',
+                         created_at: created_at)
+    end
+
+    let(:post) do
+      PostCreator.create(user,
+                         raw: 'This is very interesting test post content',
+                         topic_id: Topic.last,
+                         created_at: created_at)
+    end
+
+    it 'acts correctly' do
+      topic.created_at.should be_within(10.seconds).of(created_at)
+      post.created_at.should be_within(10.seconds).of(created_at)
     end
   end
 end

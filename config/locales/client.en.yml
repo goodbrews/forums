@@ -1,6 +1,9 @@
 # encoding: utf-8
 # This file contains content for the client portion of Discourse, sent out
 # to the Javascript app.
+#
+# To validate this YAML file after you change it, please paste it into
+# http://yamllint.com/
 
 en:
   js:
@@ -547,7 +550,7 @@ en:
         invisible: "Make Invisible"
         visible: "Make Visible"
         reset_read: "Reset Read Data"
-        multi_select: "Select Posts to Merge/Split"
+        multi_select: "Select for Merge/Split"
         convert_to_topic: "Convert to Regular Topic"
 
       reply:
@@ -601,32 +604,28 @@ en:
           other: "of {{count}} in the topic"
         cancel: "Show all posts in this topic again."
 
-      move_selected:
-        title: "Move Selected Posts"
-        error: "Sorry, there was an error moving those posts."
+      split_topic:
+        title: "Split Topic"
+        action: "split topic"
+        topic_name: "New Topic Name:"
+        error: "There was an error splitting that topic."
         instructions:
-          one: "How would you like to move this post?"
-          other: "How would you like to move the <b>{{count}}</b> posts you've selected?"
+          one: "You are about to create a new topic and populate it with the post you've selected."
+          other: "You are about to create a new topic and populate it with the <b>{{count}}</b> posts you've selected."
 
-        new_topic:
-          title: "Move Selected Posts to a New Topic"
-          topic_name: "New Topic Name:"
-          instructions:
-            one: "You are about to create a new topic and populate it with the post you've selected."
-            other: "You are about to create a new topic and populate it with the <b>{{count}}</b> posts you've selected."
-
-        existing_topic:
-          title: "Move Selected Posts to an Existing Topic"
-          instructions:
-            one: "Please choose the topic you'd like to move that post to."
-            other: "Please choose the topic you'd like to move those <b>{{count}}</b> posts to."
+      merge_topic:
+        title: "Merge Topic"
+        action: "merge topic"
+        error: "There was an error merging that topic."
+        instructions:
+          one: "Please choose the topic you'd like to move that post to."
+          other: "Please choose the topic you'd like to move those <b>{{count}}</b> posts to."
 
       multi_select:
         select: 'select'
         selected: 'selected ({{count}})'
         delete: delete selected
         cancel: cancel selecting
-        move: move selected
         description:
           one: You have selected <b>1</b> post.
           other: "You have selected <b>{{count}}</b> posts."
@@ -779,6 +778,8 @@ en:
       edit_long: "Edit Category"
       edit_uncategorized: "Edit Uncategorized"
       view: 'View Topics in Category'
+      general: 'General'
+      settings: 'Settings'
       delete: 'Delete Category'
       create: 'Create Category'
       save: 'Save Category'
@@ -804,6 +805,7 @@ en:
       add_group: "Add Group"
       security: "Security"
       allowed_groups: "Allowed Groups:"
+      auto_close_label: "Auto-close topics after:"
 
 
     flagging:
@@ -976,7 +978,7 @@ en:
         about: "Site Customization allow you to modify stylesheets and headers on the site. Choose or add one to start editing."
 
       email_logs:
-        title: "Email Logs"
+        title: "Email"
         sent_at: "Sent At"
         email_type: "Email Type"
         to_address: "To Address"

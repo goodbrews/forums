@@ -1,14 +1,14 @@
 /**
   A modal view for handling moving of posts to a new topic
 
-  @class MoveSelectedNewTopicView
+  @class SplitTopicView
   @extends Discourse.ModalBodyView
   @namespace Discourse
   @module Discourse
 **/
-Discourse.MoveSelectedNewTopicView = Discourse.ModalBodyView.extend(Discourse.SelectedPostsCount, {
-  templateName: 'modal/move_selected_new_topic',
-  title: Em.String.i18n('topic.move_selected.new_topic.title'),
+Discourse.SplitTopicView = Discourse.ModalBodyView.extend(Discourse.SelectedPostsCount, {
+  templateName: 'modal/split_topic',
+  title: Em.String.i18n('topic.split_topic.title'),
   saving: false,
 
   buttonDisabled: function() {
@@ -18,7 +18,7 @@ Discourse.MoveSelectedNewTopicView = Discourse.ModalBodyView.extend(Discourse.Se
 
   buttonTitle: function() {
     if (this.get('saving')) return Em.String.i18n('saving');
-    return Em.String.i18n('topic.move_selected.title');
+    return Em.String.i18n('topic.split_topic.action');
   }.property('saving'),
 
   movePostsToNewTopic: function() {
@@ -37,7 +37,7 @@ Discourse.MoveSelectedNewTopicView = Discourse.ModalBodyView.extend(Discourse.Se
       Em.run.next(function() { Discourse.URL.routeTo(result.url); });
     }, function() {
       // Error moving posts
-      moveSelectedView.flash(Em.String.i18n('topic.move_selected.error'));
+      moveSelectedView.flash(Em.String.i18n('topic.split_topic.error'));
       moveSelectedView.set('saving', false);
     });
     return false;

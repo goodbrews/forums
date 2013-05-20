@@ -6,6 +6,10 @@ class PostCreator
 
   attr_reader :errors, :opts
 
+  def self.create(user,opts)
+    self.new(user,opts).create
+  end
+
   # Acceptable options:
   #
   #   raw                     - raw text of post
@@ -14,6 +18,7 @@ class PostCreator
   #   acting_user             - The user performing the action might be different than the user
   #                             who is the post "author." For example when copying posts to a new
   #                             topic.
+  #   created_at              - Post creation time (optional)
   #
   #   When replying to a topic:
   #     topic_id              - topic we're replying to
@@ -31,7 +36,14 @@ class PostCreator
     # If we don't do this we introduce a rather risky dependency
     @user = user
     @opts = opts
+    @spam = false
+
     raise Discourse::InvalidParameters.new(:raw) if @opts[:raw].blank?
+  end
+
+  # True if the post was considered spam
+  def spam?
+    @spam
   end
 
   def guardian
@@ -60,9 +72,20 @@ class PostCreator
       post.no_bump = @opts[:no_bump] if @opts[:no_bump].present?
       post.extract_quoted_post_numbers
       post.acting_user = @opts[:acting_user] if @opts[:acting_user].present?
+      post.created_at = Time.zone.parse(@opts[:created_at].to_s) if @opts[:created_at].present?
 
       post.image_sizes = @opts[:image_sizes] if @opts[:image_sizes].present?
       post.invalidate_oneboxes = @opts[:invalidate_oneboxes] if @opts[:invalidate_oneboxes].present?
+
+
+      # If the post has host spam, roll it back.
+      if post.has_host_spam?
+        post.errors.add(:base, I18n.t(:spamming_host))
+        @errors = post.errors
+        @spam = true
+        raise ActiveRecord::Rollback.new
+      end
+
       unless post.save
         @errors = post.errors
         raise ActiveRecord::Rollback.new
@@ -176,6 +199,7 @@ class PostCreator
     category = Category.where(name: @opts[:category]).first
     topic_params[:category_id] = category.id if category.present?
     topic_params[:meta_data] = @opts[:meta_data] if @opts[:meta_data].present?
+    topic_params[:created_at] = Time.zone.parse(@opts[:created_at].to_s) if @opts[:created_at].present?
 
     topic = Topic.new(topic_params)
 
