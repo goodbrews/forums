@@ -25,6 +25,7 @@ class TopicView
     @filtered_posts = @topic.posts
     @filtered_posts = @filtered_posts.with_deleted if user.try(:staff?)
     @filtered_posts = @filtered_posts.best_of if options[:best_of].present?
+    @filtered_posts = @filtered_posts.where('posts.post_type <> ?', Post.types[:moderator_action]) if options[:best].present?
 
     if options[:username_filters].present?
       usernames = options[:username_filters].map{|u| u.downcase}

@@ -54,7 +54,7 @@ Discourse.AdminUser = Discourse.User.extend({
   approve: function() {
     this.set('can_approve', false);
     this.set('approved', true);
-    this.set('approved_by', Discourse.get('currentUser'));
+    this.set('approved_by', Discourse.User.current());
     Discourse.ajax("/admin/users/" + (this.get('id')) + "/approve", {type: 'PUT'});
   },
 
@@ -62,9 +62,10 @@ Discourse.AdminUser = Discourse.User.extend({
     return this.get('username').toLowerCase();
   }).property('username'),
 
-  trustLevel: (function() {
-    return Discourse.get('site.trust_levels').findProperty('id', this.get('trust_level'));
-  }).property('trust_level'),
+  trustLevel: function() {
+    var site = Discourse.Site.instance();
+    return site.get('trust_levels').findProperty('id', this.get('trust_level'));
+  }.property('trust_level'),
 
   isBanned: (function() {
     return this.get('is_banned') === true;

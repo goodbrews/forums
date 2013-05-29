@@ -12,7 +12,6 @@ Discourse.TopicView = Discourse.View.extend(Discourse.Scrolling, {
   topicBinding: 'controller.content',
   userFiltersBinding: 'controller.userFilters',
   classNameBindings: ['controller.multiSelect:multi-select', 'topic.archetype', 'topic.category.secure:secure_category'],
-  siteBinding: 'Discourse.site',
   progressPosition: 1,
   menuVisible: true,
   SHORT_POST: 1200,
@@ -340,9 +339,9 @@ Discourse.TopicView = Discourse.View.extend(Discourse.Scrolling, {
     return false;
   },
 
-  showFavoriteButton: (function() {
-    return Discourse.currentUser && !this.get('topic.isPrivateMessage');
-  }).property('topic.isPrivateMessage'),
+  showFavoriteButton: function() {
+    return Discourse.User.current() && !this.get('topic.isPrivateMessage');
+  }.property('topic.isPrivateMessage'),
 
   resetExamineDockCache: function() {
     this.docAt = null;

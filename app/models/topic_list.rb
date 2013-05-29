@@ -34,11 +34,16 @@ class TopicList
 
     @topics.each do |ft|
       ft.user_data = @topic_lookup[ft.id] if @topic_lookup.present?
-      ft.posters = ft.posters_summary(ft.user_data, @current_user, avatar_lookup: avatar_lookup)
+      ft.posters = ft.posters_summary(avatar_lookup: avatar_lookup)
       ft.topic_list = self
     end
 
     return @topics
+  end
+
+  def topic_ids
+    return [] if @topics_input.blank?
+    @topics_input.map {|t| t.id}
   end
 
   def filter_summary

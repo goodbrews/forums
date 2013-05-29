@@ -98,6 +98,21 @@ Ember.Handlebars.registerHelper('inputTip', function(options) {
   return Ember.Handlebars.helpers.view.call(this, Discourse.InputTipView, options);
 });
 
+/**
+  Inserts a Discourse.PopupInputTipView
+
+  @method popupInputTip
+  @for Handlebars
+**/
+Ember.Handlebars.registerHelper('popupInputTip', function(options) {
+  var hash = options.hash,
+      types = options.hashTypes;
+
+  normalizeHash(hash, types);
+
+  return Ember.Handlebars.helpers.view.call(this, Discourse.PopupInputTipView, options);
+});
+
 
 /**
   Produces a bound link to a category
@@ -333,20 +348,3 @@ Handlebars.registerHelper('date', function(property, options) {
   return new Handlebars.SafeString("<span class='date' title='" + fullReadable + "'>" + displayDate + "</span>");
 });
 
-/**
-  A personalized name for display
-
-  @method personalizedName
-  @for Handlebars
-**/
-Handlebars.registerHelper('personalizedName', function(property, options) {
-  var name, username;
-  name = Ember.Handlebars.get(this, property, options);
-  if (options.hash.usernamePath) {
-    username = Ember.Handlebars.get(this, options.hash.usernamePath, options);
-  }
-  if (username !== Discourse.get('currentUser.username')) {
-    return name;
-  }
-  return Em.String.i18n('you');
-});

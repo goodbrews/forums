@@ -23,3 +23,18 @@ class SiteContent < ActiveRecord::Base
   end
 
 end
+
+# == Schema Information
+#
+# Table name: site_contents
+#
+#  content_type :string(255)      not null, primary key
+#  content      :text             not null
+#  created_at   :datetime         not null
+#  updated_at   :datetime         not null
+#
+# Indexes
+#
+#  index_site_contents_on_content_type  (content_type) UNIQUE
+#
+

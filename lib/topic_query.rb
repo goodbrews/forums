@@ -190,6 +190,25 @@ class TopicQuery
     create_list(:new_in_category) {|l| l.where(category_id: category.id).by_newest.first(25)}
   end
 
+  def self.new_filter(list,treat_as_new_topic_start_date)
+    list.where("topics.created_at >= :created_at", created_at: treat_as_new_topic_start_date)
+        .where("tu.last_read_post_number IS NULL")
+        .where("COALESCE(tu.notification_level, :tracking) >= :tracking", tracking: TopicUser.notification_levels[:tracking])
+  end
+
+  def new_results(list_opts={})
+    TopicQuery.new_filter(default_list(list_opts),@user.treat_as_new_topic_start_date)
+  end
+
+  def self.unread_filter(list)
+    list.where("tu.last_read_post_number < topics.highest_post_number")
+        .where("COALESCE(tu.notification_level, :regular) >= :tracking", regular: TopicUser.notification_levels[:regular], tracking: TopicUser.notification_levels[:tracking])
+  end
+
+  def unread_results(list_opts={})
+    TopicQuery.unread_filter(default_list(list_opts))
+  end
+
   protected
 
     def create_list(filter, list_opts={})
@@ -240,18 +259,6 @@ class TopicQuery
       result
     end
 
-    def new_results(list_opts={})
-      default_list(list_opts)
-        .where("topics.created_at >= :created_at", created_at: @user.treat_as_new_topic_start_date)
-        .where("tu.last_read_post_number IS NULL")
-        .where("COALESCE(tu.notification_level, :tracking) >= :tracking", tracking: TopicUser.notification_levels[:tracking])
-    end
-
-    def unread_results(list_opts={})
-      default_list(list_opts)
-        .where("tu.last_read_post_number < topics.highest_post_number")
-        .where("COALESCE(tu.notification_level, :regular) >= :tracking", regular: TopicUser.notification_levels[:regular], tracking: TopicUser.notification_levels[:tracking])
-    end
 
     def random_suggested_results_for(topic, count, exclude_topic_ids)
       results = default_list(unordered: true, per_page: count)

@@ -130,11 +130,7 @@ class Group < ActiveRecord::Base
   end
 
   def usernames
-    users.select("username").map(&:username).join(",")
-  end
-
-  def user_ids
-    users.select('users.id').map(&:id)
+    users.pluck(:username).join(",")
   end
 
   def add(user)
@@ -160,3 +156,20 @@ class Group < ActiveRecord::Base
   end
 
 end
+
+# == Schema Information
+#
+# Table name: groups
+#
+#  id         :integer          not null, primary key
+#  name       :string(255)      not null
+#  created_at :datetime         not null
+#  updated_at :datetime         not null
+#  automatic  :boolean          default(FALSE), not null
+#  user_count :integer          default(0), not null
+#
+# Indexes
+#
+#  index_groups_on_name  (name) UNIQUE
+#
+

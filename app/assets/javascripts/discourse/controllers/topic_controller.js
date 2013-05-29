@@ -29,6 +29,9 @@ Discourse.TopicController = Discourse.ObjectController.extend(Discourse.Selected
     return (this.get('selectedPostsCount') > 0);
   }.property('selectedPostsCount'),
 
+  categories: function() {
+    return Discourse.Category.list();
+  }.property(),
 
   canSelectAll: Em.computed.not('allPostsSelected'),
 
@@ -331,7 +334,7 @@ Discourse.TopicController = Discourse.ObjectController.extend(Discourse.Selected
   },
 
   /**
-    Clears the pin from a topic for the currentUser
+    Clears the pin from a topic for the currently logged in user
 
     @method clearPin
   **/
@@ -412,7 +415,7 @@ Discourse.TopicController = Discourse.ObjectController.extend(Discourse.Selected
   },
 
   toggleBookmark: function(post) {
-    if (!Discourse.get('currentUser')) {
+    if (!Discourse.User.current()) {
       alert(Em.String.i18n("bookmarks.not_bookmarked"));
       return;
     }
@@ -477,7 +480,7 @@ Discourse.TopicController = Discourse.ObjectController.extend(Discourse.Selected
 
   deletePost: function(post) {
     // Moderators can delete posts. Regular users can only create a deleted at message.
-    if (Discourse.get('currentUser.staff')) {
+    if (Discourse.User.current('staff')) {
       post.set('deleted_at', new Date());
     } else {
       post.set('cooked', Discourse.Markdown.cook(Em.String.i18n("post.deleted_by_author")));

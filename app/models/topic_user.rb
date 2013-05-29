@@ -2,6 +2,9 @@ class TopicUser < ActiveRecord::Base
   belongs_to :user
   belongs_to :topic
 
+  scope :starred_since, lambda { |sinceDaysAgo| where('starred_at > ?', sinceDaysAgo.days.ago) }
+  scope :by_date_starred, group('date(starred_at)').order('date(starred_at)')
+
   # Class methods
   class << self
 
@@ -87,6 +90,8 @@ class TopicUser < ActiveRecord::Base
           end
 
           TopicUser.create(attrs.merge!(user_id: user_id, topic_id: topic_id.to_i, first_visited_at: now ,last_visited_at: now))
+        else
+          observe_after_save_callbacks_for topic_id, user_id
         end
       end
     rescue ActiveRecord::RecordNotUnique
@@ -98,6 +103,8 @@ class TopicUser < ActiveRecord::Base
       rows = TopicUser.update_all({last_visited_at: now}, {topic_id: topic.id, user_id: user.id})
       if rows == 0
         TopicUser.create(topic_id: topic.id, user_id: user.id, last_visited_at: now, first_visited_at: now)
+      else
+        observe_after_save_callbacks_for topic.id, user.id
       end
     end
 
@@ -173,6 +180,11 @@ class TopicUser < ActiveRecord::Base
       end
     end
 
+    def observe_after_save_callbacks_for(topic_id, user_id)
+      TopicUser.where(topic_id: topic_id, user_id: user_id).each do |topic_user|
+        UserActionObserver.instance.after_save topic_user
+      end
+    end
   end
 
   def self.ensure_consistency!
@@ -200,3 +212,29 @@ SQL
   end
 
 end
+
+# == Schema Information
+#
+# Table name: topic_users
+#
+#  user_id                  :integer          not null
+#  topic_id                 :integer          not null
+#  starred                  :boolean          default(FALSE), not null
+#  posted                   :boolean          default(FALSE), not null
+#  last_read_post_number    :integer
+#  seen_post_count          :integer
+#  starred_at               :datetime
+#  last_visited_at          :datetime
+#  first_visited_at         :datetime
+#  notification_level       :integer          default(1), not null
+#  notifications_changed_at :datetime
+#  notifications_reason_id  :integer
+#  total_msecs_viewed       :integer          default(0), not null
+#  cleared_pinned_at        :datetime
+#  unstarred_at             :datetime
+#
+# Indexes
+#
+#  index_forum_thread_users_on_forum_thread_id_and_user_id  (topic_id,user_id) UNIQUE
+#
+

@@ -9,7 +9,7 @@ gem 'barber', '0.3.0'
 
 gem 'vestal_versions', git: 'https://github.com/zhangyuan/vestal_versions'
 
-gem 'message_bus'
+gem 'message_bus', git: 'https://github.com/SamSaffron/message_bus'
 gem 'rails_multisite', path: 'vendor/gems/rails_multisite'
 gem 'simple_handlebars_rails', path: 'vendor/gems/simple_handlebars_rails'
 
@@ -45,6 +45,7 @@ gem 'omniauth-facebook'
 gem 'omniauth-twitter'
 gem 'omniauth-github'
 gem 'omniauth-browserid', git: 'https://github.com/callahad/omniauth-browserid.git', branch: 'observer_api'
+gem 'omniauth-cas'
 gem 'oj'
 gem 'pg'
 # we had pain with the 3.2.13 upgrade so monkey patch the security fix
@@ -59,8 +60,10 @@ gem 'sanitize'
 gem 'sass'
 gem 'seed-fu'
 gem 'sidekiq'
+gem 'sidekiq-failures'
 gem 'sinatra', require: nil
 gem 'slim'  # required for sidekiq-web
+gem 'strong_parameters' # remove when we upgrade to Rails 4
 gem 'therubyracer', require: 'v8'
 gem 'thin'
 gem 'diffy', require: false
@@ -113,13 +116,16 @@ group :test, :development do
   gem 'terminal-notifier-guard', require: false
   gem 'timecop'
   gem 'rspec-given'
+  gem 'pry-rails'
+  gem 'pry-nav'
 end
 
 group :development do
   gem 'better_errors'
   gem 'binding_of_caller'
   gem 'librarian', '>= 0.0.25', require: false
-  gem 'pry-rails'
+  # https://github.com/ctran/annotate_models/pull/106
+  gem 'annotate', :git => 'https://github.com/SamSaffron/annotate_models.git'
 end
 
 # we are using a custom sprockets repo to work around: https://github.com/rails/rails/issues/8099#issuecomment-16137638

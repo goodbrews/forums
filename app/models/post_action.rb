@@ -26,7 +26,7 @@ class PostAction < ActiveRecord::Base
                                     .count('DISTINCT posts.id')
 
     $redis.set('posts_flagged_count', posts_flagged_count)
-    user_ids = User.staff.select(:id).map {|u| u.id}
+    user_ids = User.staff.pluck(:id)
     MessageBus.publish('/flagged_counts', { total: posts_flagged_count }, { user_ids: user_ids })
   end
 
@@ -202,12 +202,22 @@ class PostAction < ActiveRecord::Base
     column = "#{post_action_type.to_s}_count"
     delta = deleted_at.nil? ? 1 : -1
 
-    # Voting also changes the sort_order
-    if post_action_type == :vote
-      Post.update_all ["vote_count = vote_count + :delta, sort_order = :max - (vote_count + :delta)", delta: delta, max: Topic.max_sort_order], id: post_id
+    # We probably want to refactor this method to something cleaner.
+    case post_action_type
+    when :vote
+      # Voting also changes the sort_order
+      Post.update_all ["vote_count = vote_count + :delta, sort_order = :max - (vote_count + :delta)",
+                        delta: delta,
+                        max: Topic.max_sort_order], id: post_id
+    when :like
+      # `like_score` is weighted higher for staff accounts
+      Post.update_all ["like_count = like_count + :delta, like_score = like_score + :score_delta",
+                        delta: delta,
+                        score_delta: user.staff? ? delta * SiteSetting.staff_like_weight : delta], id: post_id
     else
       Post.update_all ["#{column} = #{column} + ?", delta], id: post_id
     end
+
     Topic.update_all ["#{column} = #{column} + ?", delta], id: post.topic_id
 
 
@@ -242,3 +252,25 @@ class PostAction < ActiveRecord::Base
   end
 
 end
+
+# == Schema Information
+#
+# Table name: post_actions
+#
+#  id                  :integer          not null, primary key
+#  post_id             :integer          not null
+#  user_id             :integer          not null
+#  post_action_type_id :integer          not null
+#  deleted_at          :datetime
+#  created_at          :datetime         not null
+#  updated_at          :datetime         not null
+#  deleted_by          :integer
+#  message             :text
+#  related_post_id     :integer
+#
+# Indexes
+#
+#  idx_unique_actions             (user_id,post_action_type_id,post_id,deleted_at) UNIQUE
+#  index_post_actions_on_post_id  (post_id)
+#
+

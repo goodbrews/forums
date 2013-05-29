@@ -22,14 +22,17 @@ EDIT = 'edit';
 REPLY_AS_NEW_TOPIC_KEY = "reply_as_new_topic";
 
 Discourse.Composer = Discourse.Model.extend({
-  archetypesBinding: 'Discourse.site.archetypes',
 
   init: function() {
     this._super();
     var val = Discourse.KeyValueStore.get('composer.showPreview') || 'true';
     this.set('showPreview', val === 'true');
-    this.set('archetypeId', Discourse.get('site.default_archetype'));
+    this.set('archetypeId', Discourse.Site.instance().get('default_archetype'));
   },
+
+  archetypes: function() {
+    return Discourse.Site.instance().get('archetypes');
+  }.property(),
 
   creatingTopic: function() {
     return this.get('action') === CREATE_TOPIC;
@@ -66,7 +69,7 @@ Discourse.Composer = Discourse.Model.extend({
   }.property('editingPost', 'creatingTopic', 'post.post_number'),
 
   showAdminOptions: function() {
-    if (this.get('creatingTopic') && Discourse.get('currentUser.staff')) return true;
+    if (this.get('creatingTopic') && Discourse.User.current('staff')) return true;
     return false;
   }.property('editTitle'),
 
@@ -161,7 +164,9 @@ Discourse.Composer = Discourse.Model.extend({
     //    - creating a new topic
     //    - editing the 1st post
     //    - creating a private message
-    if (this.get('editTitle') && this.get('titleLength') < Discourse.SiteSettings.min_topic_title_length) return true;
+    if (this.get('editTitle') &&
+          (this.get('titleLength') < Discourse.SiteSettings.min_topic_title_length ||
+            this.get('titleLength') > Discourse.SiteSettings.max_topic_title_length) ) return true;
 
     // Need at least one user when sending a private message
     if (this.get('creatingPrivateMessage') && (this.get('targetUsernames').trim() + ',').indexOf(',') === 0) return true;
@@ -169,8 +174,10 @@ Discourse.Composer = Discourse.Model.extend({
     // reply is always required
     if (this.get('replyLength') < Discourse.SiteSettings.min_post_length) return true;
 
+    if (this.get('editTitle') && !Discourse.SiteSettings.allow_uncategorized_topics && !this.get('categoryName')) return true;
+
     return false;
-  }.property('loading', 'editTitle', 'titleLength', 'targetUsernames', 'replyLength'),
+  }.property('loading', 'editTitle', 'titleLength', 'targetUsernames', 'replyLength', 'categoryName'),
 
   // The text for the save button
   saveText: function() {
@@ -238,7 +245,7 @@ Discourse.Composer = Discourse.Model.extend({
     }
 
     this.set('categoryName', opts.categoryName || this.get('topic.category.name'));
-    this.set('archetypeId', opts.archetypeId || Discourse.get('site.default_archetype'));
+    this.set('archetypeId', opts.archetypeId || Discourse.Site.instance().get('default_archetype'));
     this.set('metaData', opts.metaData ? Em.Object.create(opts.metaData) : null);
     this.set('reply', opts.reply || this.get("reply") || "");
     if (opts.postId) {
@@ -273,7 +280,9 @@ Discourse.Composer = Discourse.Model.extend({
   },
 
   save: function(opts) {
-    return this.get('editingPost') ? this.editPost(opts) : this.createPost(opts);
+    if( !this.get('cantSubmitPost') ) {
+      return this.get('editingPost') ? this.editPost(opts) : this.createPost(opts);
+    }
   },
 
   // When you edit a post
@@ -331,7 +340,7 @@ Discourse.Composer = Discourse.Model.extend({
   createPost: function(opts) {
     var post = this.get('post'),
         topic = this.get('topic'),
-        currentUser = Discourse.get('currentUser'),
+        currentUser = Discourse.User.current(),
         addedToStream = false;
 
     // The post number we'll probably get from the server
@@ -354,7 +363,7 @@ Discourse.Composer = Discourse.Model.extend({
         user_id: currentUser.get('id'),
         metaData: this.get('metaData'),
         archetype: this.get('archetypeId'),
-        post_type: Discourse.get('site.post_types.regular'),
+        post_type: Discourse.Site.instance().get('post_types.regular'),
         target_usernames: this.get('targetUsernames'),
         actions_summary: Em.A(),
         moderator: currentUser.get('moderator'),
@@ -375,7 +384,7 @@ Discourse.Composer = Discourse.Model.extend({
       // Update last post
       topic.set('last_posted_at', new Date());
       topic.set('highest_post_number', createdPost.get('post_number'));
-      topic.set('last_poster', Discourse.get('currentUser'));
+      topic.set('last_poster', Discourse.User.current());
       topic.set('filtered_posts_count', topic.get('filtered_posts_count') + 1);
 
       // Set the topic view for the new post
@@ -470,7 +479,7 @@ Discourse.Composer = Discourse.Model.extend({
 
   flashDraftStatusForNewUser: function() {
     var $draftStatus = $('#draft-status');
-    if (Discourse.get('currentUser.trust_level') === 0) {
+    if (Discourse.User.current('trust_level') === 0) {
       $draftStatus.toggleClass('flash', true);
       setTimeout(function() { $draftStatus.removeClass('flash'); }, 250);
     }

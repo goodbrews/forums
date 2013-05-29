@@ -18,7 +18,7 @@ Discourse.NavItem = Discourse.Model.extend({
   // href from this item
   href: function() {
     var name = this.get('name'),
-        href = Discourse.getURL("/") + name;
+        href = Discourse.getURL("/") + name.replace(' ', '-');
     if (name === 'category') href += "/" + this.get('categoryName');
     return href;
   }.property('name')
@@ -34,7 +34,7 @@ Discourse.NavItem.reopenClass({
         testName = name.split("/")[0];
 
     if (!opts.loggedOn && !validAnon.contains(testName)) return null;
-    if (!opts.hasCategories && testName === "categories") return null;
+    if (!Discourse.Category.list() && testName === "categories") return null;
     if (!validNavNames.contains(testName)) return null;
 
     opts = {

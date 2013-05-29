@@ -2,8 +2,6 @@ require 'spec_helper'
 
 describe TopicsController do
 
-
-
   context 'move_posts' do
     it 'needs you to be logged in' do
       lambda { xhr :post, :move_posts, topic_id: 111, title: 'blah', post_ids: [1,2,3] }.should raise_error(Discourse::NotLoggedIn)
@@ -284,12 +282,12 @@ describe TopicsController do
       end
 
       it "changes the user's starred flag when the parameter is present" do
-        Topic.any_instance.expects(:toggle_mute).with(@topic.user, true)
+        Topic.any_instance.expects(:toggle_mute).with(@topic.user)
         xhr :put, :mute, topic_id: @topic.id, starred: 'true'
       end
 
       it "removes the user's starred flag when the parameter is not true" do
-        Topic.any_instance.expects(:toggle_mute).with(@topic.user, false)
+        Topic.any_instance.expects(:toggle_mute).with(@topic.user)
         xhr :put, :unmute, topic_id: @topic.id, starred: 'false'
       end
 
