@@ -6,7 +6,7 @@
 //= require ../../app/assets/javascripts/discourse/components/probes.js
 
 // Externals we need to load first
-//= require ../../app/assets/javascripts/external/jquery-1.8.3.js
+//= require ../../app/assets/javascripts/external/jquery-1.9.1.js
 
 //= require ../../app/assets/javascripts/external/jquery.ui.widget.js
 //= require ../../app/assets/javascripts/external/handlebars-1.0.rc.3.js
@@ -21,7 +21,9 @@
 //= require_tree ../../app/assets/javascripts/external
 
 //= require ../../app/assets/javascripts/locales/i18n
+//= require ../../app/assets/javascripts/locales/date_locales.js
 //= require ../../app/assets/javascripts/discourse/helpers/i18n_helpers
+//= require ../../app/assets/javascripts/locales/en
 //= require ../../app/assets/javascripts/discourse
 
 // Stuff we need to load first

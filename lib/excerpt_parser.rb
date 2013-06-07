@@ -2,11 +2,14 @@ class ExcerptParser < Nokogiri::XML::SAX::Document
 
   attr_reader :excerpt
 
-  def initialize(length,options)
+  def initialize(length, options=nil)
     @length = length
     @excerpt = ""
     @current_length = 0
+    options || {}
     @strip_links = options[:strip_links] == true
+    @text_entities = options[:text_entities] == true
+    @markdown_images = options[:markdown_images] == true
   end
 
   def self.get_excerpt(html, length, options)
@@ -15,12 +18,21 @@ class ExcerptParser < Nokogiri::XML::SAX::Document
     catch(:done) do
       parser.parse(html) unless html.nil?
     end
+    me.excerpt.strip!
     me.excerpt
+  end
+
+  def include_tag(name, attributes)
+    characters("<#{name} #{attributes.map{|k,v| "#{k}='#{v}'"}.join(' ')}>", false, false, false)
   end
 
   def start_element(name, attributes=[])
     case name
       when "img"
+
+        # If include_images is set, include the image in markdown
+        characters("!") if @markdown_images
+
         attributes = Hash[*attributes.flatten]
         if attributes["alt"]
           characters("[#{attributes["alt"]}]")
@@ -29,12 +41,12 @@ class ExcerptParser < Nokogiri::XML::SAX::Document
         else
           characters("[image]")
         end
+
+        characters("(#{attributes['src']})") if @markdown_images
+
       when "a"
         unless @strip_links
-          c = "<a "
-          c << attributes.map{|k,v| "#{k}='#{v}'"}.join(' ')
-          c << ">"
-          characters(c, false, false, false)
+          include_tag(name, attributes)
           @in_a = true
         end
       when "aside"
@@ -62,7 +74,7 @@ class ExcerptParser < Nokogiri::XML::SAX::Document
     if count_it && @current_length + string.length > @length
       length = [0, @length - @current_length - 1].max
       @excerpt << encode.call(string[0..length]) if truncate
-      @excerpt << "&hellip;"
+      @excerpt << (@text_entities ? "..." : "&hellip;")
       @excerpt << "</a>" if @in_a
       throw :done
     end

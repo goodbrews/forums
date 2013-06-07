@@ -34,13 +34,15 @@ class Category < ActiveRecord::Base
   scope :secured, ->(guardian = nil) {
     ids = guardian.secure_category_ids if guardian
     if ids.present?
-      where("categories.secure ='f' or categories.id in (:cats)", cats: ids)
+      where("NOT categories.secure or categories.id in (:cats)", cats: ids)
     else
-      where("categories.secure ='f'")
+      where("NOT categories.secure")
     end
   }
 
   delegate :post_template, to: 'self.class'
+
+  attr_accessor :displayable_topics
 
   # Internal: Update category stats: # of topics in past year, month, week for
   # all categories.
@@ -62,8 +64,6 @@ class Category < ActiveRecord::Base
                          topics_week = (#{topics_week})")
   end
 
-  attr_accessor :displayable_topics
-
   # Internal: Generate the text of post prompting to enter category
   # description.
   def self.post_template
@@ -84,6 +84,8 @@ class Category < ActiveRecord::Base
   def ensure_slug
     if name.present?
       self.slug = Slug.for(name)
+
+      return if self.slug.blank?
 
       # If a category with that slug already exists, set the slug to nil so the category can be found
       # another way.
@@ -130,6 +132,12 @@ class Category < ActiveRecord::Base
       category_groups.destroy_all unless new_record?
     else
       groups.push(group)
+    end
+  end
+
+  def secure_group_ids
+    if self.secure
+      groups.pluck("groups.id")
     end
   end
 

@@ -30,4 +30,4 @@ Discourse.InputTipView = Discourse.View.extend({
   }
 });
 
-
+Discourse.View.registerHelper('inputTip', Discourse.InputTipView);

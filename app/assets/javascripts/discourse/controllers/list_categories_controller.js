@@ -24,15 +24,15 @@ Discourse.ListCategoriesController = Discourse.ObjectController.extend({
     });
   }.property('categories.@each'),
 
-  editCategory: function(category) {
-    this.get('controllers.modal').show(Discourse.EditCategoryView.create({ category: category }));
-    return false;
-  },
-
   canEdit: function() {
     var u = Discourse.User.current();
     return u && u.admin;
-  }.property()
+  }.property(),
+
+  // clear a pinned topic
+  clearPin: function(topic) {
+    topic.clearPin();
+  }
 
 });
 

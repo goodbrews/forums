@@ -6,8 +6,6 @@ class SiteSetting < ActiveRecord::Base
   validates_presence_of :name
   validates_presence_of :data_type
 
-  attr_accessible :description, :name, :value, :data_type
-
   # settings available in javascript under Discourse.SiteSettings
   client_setting(:title, "Discourse")
   client_setting(:logo_url, '/assets/d-logo-sketch.png')
@@ -27,7 +25,6 @@ class SiteSetting < ActiveRecord::Base
   client_setting(:must_approve_users, false)
   client_setting(:ga_tracking_code, "")
   client_setting(:ga_domain_name, "")
-  client_setting(:new_topics_rollup, 1)
   client_setting(:enable_long_polling, true)
   client_setting(:polling_interval, 3000)
   client_setting(:anon_polling_interval, 30000)
@@ -35,6 +32,7 @@ class SiteSetting < ActiveRecord::Base
   client_setting(:max_post_length, 16000)
   client_setting(:min_topic_title_length, 15)
   client_setting(:max_topic_title_length, 255)
+  client_setting(:min_private_message_title_length, 2)
   client_setting(:allow_uncategorized_topics, true)
   client_setting(:min_search_term_length, 3)
   client_setting(:flush_timings_secs, 5)
@@ -59,6 +57,9 @@ class SiteSetting < ActiveRecord::Base
   setting(:flags_required_to_hide_post, 3)
   setting(:cooldown_minutes_after_hiding_posts, 10)
 
+  setting(:num_flags_to_block_new_user, 3)
+  setting(:num_users_to_block_new_user, 3)
+
   # used mainly for dev, force hostname for Discourse.base_url
   # You would usually use multisite for this
   setting(:force_hostname, '')
@@ -70,8 +71,7 @@ class SiteSetting < ActiveRecord::Base
   setting(:crawl_images, !Rails.env.test?)
   setting(:enable_imgur, false)
   setting(:imgur_client_id, '')
-  setting(:imgur_client_secret, '')
-  setting(:imgur_endpoint, "http://api.imgur.com/3/image.json")
+  setting(:imgur_endpoint, "https://api.imgur.com/3/image.json")
   setting(:max_image_width, 690)
   client_setting(:category_featured_topics, 6)
   setting(:topics_per_page, 30)
@@ -132,6 +132,10 @@ class SiteSetting < ActiveRecord::Base
 
   setting(:send_welcome_message, true)
 
+  client_setting(:invite_only, false)
+
+  client_setting(:login_required, false)
+
   client_setting(:enable_local_logins, true)
   client_setting(:enable_local_account_create, true)
 
@@ -158,7 +162,11 @@ class SiteSetting < ActiveRecord::Base
 
   setting(:enforce_global_nicknames, true)
   setting(:discourse_org_access_key, '')
+  
   setting(:enable_s3_uploads, false)
+  setting(:s3_access_key_id, '')
+  setting(:s3_secret_access_key, '')
+  setting(:s3_region, '')
   setting(:s3_upload_bucket, '')
 
   setting(:default_trust_level, 0)
@@ -219,6 +227,10 @@ class SiteSetting < ActiveRecord::Base
 
   def self.topic_title_length
     min_topic_title_length..max_topic_title_length
+  end
+
+  def self.private_message_title_length
+    min_private_message_title_length..max_topic_title_length
   end
 
   def self.post_length

@@ -63,3 +63,5 @@ Discourse.UserSelector.reopenClass({
       return this.compiled;
     }
 });
+
+Discourse.View.registerHelper('userSelector', Discourse.UserSelector);

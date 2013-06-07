@@ -29,7 +29,7 @@ Discourse.User = Discourse.Model.extend({
   }).property('username'),
 
   searchContext: function() {
-    return ({ type: 'user', id: this.get('username_lower') });
+    return ({ type: 'user', id: this.get('username_lower'), user: this });
   }.property('username_lower'),
 
   /**
@@ -313,6 +313,7 @@ Discourse.User.reopenClass({
       discourseUserClass.currentUser = null;
     });
   },
+
 
   /**
     Checks if given username is valid for this email address

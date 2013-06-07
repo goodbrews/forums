@@ -13,11 +13,16 @@ Discourse.UserRoute = Discourse.Route.extend({
   },
 
   serialize: function(params) {
+    if (!params) return {};
     return { username: Em.get(params, 'username').toLowerCase() };
   },
 
   setupController: function(controller, user) {
     user.findDetails();
+    controller.set('model', user);
+
+    // Add a search context
+    this.controllerFor('search').set('searchContext', user.get('searchContext'));
   },
 
   activate: function() {
@@ -26,9 +31,6 @@ Discourse.UserRoute = Discourse.Route.extend({
     Discourse.MessageBus.subscribe("/users/" + user.get('username_lower'), function(data) {
       user.loadUserAction(data);
     });
-
-    // Add a search context
-    this.controllerFor('search').set('searchContext', user.get('searchContext'));
   },
 
   deactivate: function() {

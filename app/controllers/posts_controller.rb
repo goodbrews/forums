@@ -25,7 +25,7 @@ class PostsController < ApplicationController
   end
 
   def create
-    requires_parameter(:post)
+    params.require(:post)
 
     post_creator = PostCreator.new(current_user,
                                    raw: params[:post][:raw],
@@ -55,7 +55,7 @@ class PostsController < ApplicationController
   end
 
   def update
-    requires_parameter(:post)
+    params.require(:post)
 
     post = Post.where(id: params[:id]).first
     post.image_sizes = params[:image_sizes] if params[:image_sizes].present?
@@ -90,7 +90,7 @@ class PostsController < ApplicationController
 
     post_serializer = PostSerializer.new(post, scope: guardian, root: false)
     post_serializer.draft_sequence = DraftSequence.current(current_user, post.topic.draft_key)
-    link_counts = TopicLinkClick.counts_for(post.topic, [post])
+    link_counts = TopicLink.counts_for(guardian,post.topic, [post])
     post_serializer.single_post_link_counts = link_counts[post.id] if link_counts.present?
     post_serializer.topic_slug = post.topic.slug if post.topic.present?
 
@@ -138,7 +138,7 @@ class PostsController < ApplicationController
 
   def destroy_many
 
-    requires_parameters(:post_ids)
+    params.require(:post_ids)
 
     posts = Post.where(id: params[:post_ids])
     raise Discourse::InvalidParameters.new(:post_ids) if posts.blank?

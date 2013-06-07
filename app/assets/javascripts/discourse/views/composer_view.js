@@ -116,9 +116,13 @@ Discourse.ComposerView = Discourse.View.extend({
       // Search for similar topics if the user pauses typing
       controller.findSimilarTopics();
     }, 1000);
+  },
 
+  keyDown: function(e) {
     // If the user hit ESC
-    if (e.which === 27) controller.hitEsc();
+    if (e.which === 27) {
+      this.get('controller').hitEsc();
+    }
   },
 
   didInsertElement: function() {
@@ -193,10 +197,7 @@ Discourse.ComposerView = Discourse.View.extend({
     $uploadTarget = $('#reply-control');
     this.editor.hooks.insertImageDialog = function(callback) {
       callback(null);
-      _this.get('controller.controllers.modal').show(Discourse.ImageSelectorView.create({
-        composer: _this,
-        uploadTarget: $uploadTarget
-      }));
+      _this.get('controller').send('showImageSelector', _this);
       return true;
     };
 
@@ -338,7 +339,6 @@ Discourse.ComposerView = Discourse.View.extend({
     Em.run.schedule('afterRender', function() {
       Discourse.Utilities.setCaretPosition(ctrl, caretPosition + text.length);
     });
-
   },
 
   // Uses javascript to get the image sizes from the preview, if present
@@ -373,10 +373,11 @@ Discourse.ComposerView = Discourse.View.extend({
 
   titleValidation: function() {
     var title = this.get('content.title'), reason;
+    var minLength = (this.get('content.creatingPrivateMessage') ? Discourse.SiteSettings.min_private_message_title_length : Discourse.SiteSettings.min_topic_title_length);
     if( !title || title.length < 1 ){
       reason = Em.String.i18n('composer.error.title_missing');
-    } else if( title.length < Discourse.SiteSettings.min_topic_title_length ) {
-      reason = Em.String.i18n('composer.error.title_too_short', {min: Discourse.SiteSettings.min_topic_title_length})
+    } else if( title.length < minLength ) {
+      reason = Em.String.i18n('composer.error.title_too_short', {min: minLength})
     } else if( title.length > Discourse.SiteSettings.max_topic_title_length ) {
       reason = Em.String.i18n('composer.error.title_too_long', {max: Discourse.SiteSettings.max_topic_title_length})
     }

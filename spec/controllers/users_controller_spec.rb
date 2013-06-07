@@ -178,7 +178,7 @@ describe UsersController do
       let!(:user) { log_in }
 
       it 'raises an error without an email parameter' do
-        lambda { xhr :put, :change_email, username: user.username }.should raise_error(Discourse::InvalidParameters)
+	lambda { xhr :put, :change_email, username: user.username }.should raise_error(ActionController::ParameterMissing)
       end
 
       it "raises an error if you can't edit the user" do
@@ -426,6 +426,19 @@ describe UsersController do
       it_should_behave_like 'honeypot fails'
     end
 
+    context "when 'invite only' setting is enabled" do
+      before { SiteSetting.expects(:invite_only?).returns(true) }
+
+      let(:create_params) {{
+        name: @user.name,
+        username: @user.username,
+        password: 'strongpassword',
+        email: @user.email
+      }}
+
+      it_should_behave_like 'honeypot fails'
+    end
+
     shared_examples_for 'failed signup' do
       it 'should not create a new User' do
         expect { xhr :post, :create, create_params }.to_not change { User.count }
@@ -476,7 +489,7 @@ describe UsersController do
       let(:new_username) { "#{user.username}1234" }
 
       it 'raises an error without a new_username param' do
-        lambda { xhr :put, :username, username: user.username }.should raise_error(Discourse::InvalidParameters)
+	lambda { xhr :put, :username, username: user.username }.should raise_error(ActionController::ParameterMissing)
       end
 
       it 'raises an error when you don\'t have permission to change the user' do
@@ -505,7 +518,7 @@ describe UsersController do
     end
 
     it 'raises an error without a username parameter' do
-      lambda { xhr :get, :check_username }.should raise_error(Discourse::InvalidParameters)
+      lambda { xhr :get, :check_username }.should raise_error(ActionController::ParameterMissing)
     end
 
     shared_examples_for 'when username is unavailable locally' do

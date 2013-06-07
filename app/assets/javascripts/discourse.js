@@ -34,6 +34,30 @@ Discourse = Ember.Application.createWithMixins({
     return u + url;
   },
 
+  /**
+    This custom resolver allows us to find admin templates without calling .render
+    even though our path formats are slightly different than what ember prefers.
+  */
+  resolver: Ember.DefaultResolver.extend({
+    resolveTemplate: function(parsedName) {
+      var resolvedTemplate = this._super(parsedName);
+      if (resolvedTemplate) { return resolvedTemplate; }
+
+      // If we can't find a template, check to see if it's similar to how discourse
+      // lays out templates like: adminEmail => admin/templates/email
+      if (parsedName.fullNameWithoutType.indexOf('admin') === 0) {
+        var decamelized = parsedName.fullNameWithoutType.decamelize();
+        decamelized = decamelized.replace(/^admin\_/, 'admin/templates/');
+        decamelized = decamelized.replace(/^admin\./, 'admin/templates/');
+        decamelized = decamelized.replace(/\./, '_');
+
+        resolvedTemplate = Ember.TEMPLATES[decamelized];
+        if (resolvedTemplate) { return resolvedTemplate; }
+      }
+      return Ember.TEMPLATES.not_found;
+    }
+  }),
+
   titleChanged: function() {
     var title;
     title = "";
@@ -42,15 +66,17 @@ Discourse = Ember.Application.createWithMixins({
     }
     title += Discourse.SiteSettings.title;
     $('title').text(title);
-    if (!this.get('hasFocus') && this.get('notify')) {
-      title = "(*) " + title;
+
+    var notifyCount = this.get('notifyCount');
+    if (notifyCount > 0) {
+      title = "(" + notifyCount + ") " + title;
     }
     // chrome bug workaround see: http://stackoverflow.com/questions/2952384/changing-the-window-title-when-focussing-the-window-doesnt-work-in-chrome
     window.setTimeout(function() {
       document.title = ".";
       document.title = title;
     }, 200);
-  }.observes('title', 'hasFocus', 'notify'),
+  }.observes('title', 'hasFocus', 'notifyCount'),
 
   // The classes of buttons to show on a post
   postButtons: function() {
@@ -59,8 +85,8 @@ Discourse = Ember.Application.createWithMixins({
     });
   }.property('Discourse.SiteSettings.post_menu'),
 
-  notifyTitle: function() {
-    this.set('notify', true);
+  notifyTitle: function(count) {
+    this.set('notifyCount', count);
   },
 
   openComposer: function(opts) {
@@ -139,6 +165,10 @@ Discourse = Ember.Application.createWithMixins({
         xhr.setRequestHeader('X-CSRF-Token', csrfToken);
       }
     });
+
+    setInterval(function(){
+      Discourse.Formatter.updateRelativeAge($('.relative-date'));
+    },60 * 1000);
   },
 
   /**
@@ -155,9 +185,19 @@ Discourse = Ember.Application.createWithMixins({
   },
 
   authenticationComplete: function(options) {
-    // TODO, how to dispatch this to the view without the container?
-    var loginView = Discourse.__container__.lookup('controller:modal').get('currentView');
-    return loginView.authenticationComplete(options);
+    // TODO, how to dispatch this to the controller without the container?
+    var loginController = Discourse.__container__.lookup('controller:login');
+    return loginController.authenticationComplete(options);
+  },
+
+  loginRequired: function() {
+    return (
+      Discourse.SiteSettings.login_required && !Discourse.User.current()
+    );
+  }.property(),
+
+  redirectIfLoginRequired: function(route) {
+    if(this.get('loginRequired')) { route.transitionTo('login'); }
   },
 
   /**
@@ -260,8 +300,11 @@ Discourse = Ember.Application.createWithMixins({
     Discourse.MessageBus.alwaysLongPoll = Discourse.Environment === "development";
     Discourse.MessageBus.start();
     Discourse.KeyValueStore.init("discourse_", Discourse.MessageBus);
-    // Make sure we delete preloaded data
-    PreloadStore.remove('siteSettings');
+
+    // Don't remove site settings for now. It seems on some browsers the route
+    // tries to use it after it has been removed
+    // PreloadStore.remove('siteSettings');
+
     // Developer specific functions
     Discourse.Development.setupProbes();
     Discourse.Development.observeLiveChanges();

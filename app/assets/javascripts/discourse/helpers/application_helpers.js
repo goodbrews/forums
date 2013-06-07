@@ -1,16 +1,4 @@
 /**
-  Allows us to supply bindings without "binding" to a helper.
-**/
-function normalizeHash(hash, hashTypes) {
-  for (var prop in hash) {
-    if (hashTypes[prop] === 'ID') {
-      hash[prop + 'Binding'] = hash[prop];
-      delete hash[prop];
-    }
-  }
-}
-
-/**
   Breaks up a long string
 
   @method breakUp
@@ -66,51 +54,6 @@ Handlebars.registerHelper('topicLink', function(property, options) {
 Handlebars.registerHelper('categoryLink', function(property, options) {
   var category = Ember.Handlebars.get(this, property, options);
   return new Handlebars.SafeString(Discourse.Utilities.categoryLink(category));
-});
-
-/**
-  Inserts a Discourse.TextField to allow the user to enter information.
-
-  @method textField
-  @for Handlebars
-**/
-Ember.Handlebars.registerHelper('textField', function(options) {
-  var hash = options.hash,
-      types = options.hashTypes;
-
-  normalizeHash(hash, types);
-
-  return Ember.Handlebars.helpers.view.call(this, Discourse.TextField, options);
-});
-
-/**
-  Inserts a Discourse.InputTipView
-
-  @method inputTip
-  @for Handlebars
-**/
-Ember.Handlebars.registerHelper('inputTip', function(options) {
-  var hash = options.hash,
-      types = options.hashTypes;
-
-  normalizeHash(hash, types);
-
-  return Ember.Handlebars.helpers.view.call(this, Discourse.InputTipView, options);
-});
-
-/**
-  Inserts a Discourse.PopupInputTipView
-
-  @method popupInputTip
-  @for Handlebars
-**/
-Ember.Handlebars.registerHelper('popupInputTip', function(options) {
-  var hash = options.hash,
-      types = options.hashTypes;
-
-  normalizeHash(hash, types);
-
-  return Ember.Handlebars.helpers.view.call(this, Discourse.PopupInputTipView, options);
 });
 
 
@@ -230,9 +173,19 @@ Handlebars.registerHelper('avatar', function(user, options) {
   @for Handlebars
 **/
 Handlebars.registerHelper('unboundDate', function(property, options) {
-  var dt;
-  dt = new Date(Ember.Handlebars.get(this, property, options));
+  var dt = new Date(Ember.Handlebars.get(this, property, options));
   return dt.format("long");
+});
+
+/**
+  Live refreshing age helper
+
+  @method unboundDate
+  @for Handlebars
+**/
+Handlebars.registerHelper('unboundAge', function(property, options) {
+  var dt = new Date(Ember.Handlebars.get(this, property, options));
+  return new Handlebars.SafeString(Discourse.Formatter.autoUpdatingRelativeAge(dt));
 });
 
 /**
@@ -342,7 +295,7 @@ Handlebars.registerHelper('date', function(property, options) {
     }
     displayDate = humanized;
     if (!leaveAgo) {
-        displayDate = (dt.millisecondsAgo()).duration();
+      displayDate = (dt.millisecondsAgo()).duration();
     }
   }
   return new Handlebars.SafeString("<span class='date' title='" + fullReadable + "'>" + displayDate + "</span>");

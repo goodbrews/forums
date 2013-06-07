@@ -38,6 +38,7 @@ config/redis.yml
 # Ignore all logfiles and tempfiles.
 /log/*.log
 /tmp
+/logfile
 
 # Ignore Eclipse .project file
 /.project

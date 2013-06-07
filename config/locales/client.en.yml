@@ -7,6 +7,42 @@
 
 en:
   js:
+    dates:
+      tiny:
+        half_a_minute: "< 1m"
+        less_than_x_seconds:
+          one:   "< 1s"
+          other: "< %{count}s"
+        x_seconds:
+          one:   "1s"
+          other: "%{count}s"
+        less_than_x_minutes:
+          one:   "< 1m"
+          other: "< %{count}m"
+        x_minutes:
+          one:   "1m"
+          other: "%{count}m"
+        about_x_hours:
+          one:   "1h"
+          other: "%{count}h"
+        x_days:
+          one:   "1d"
+          other: "%{count}d"
+        about_x_months:
+          one:   "1mon"
+          other: "%{count}mon"
+        x_months:
+          one:   "1mon"
+          other: "%{count}mon"
+        about_x_years:
+          one:   "1y"
+          other: "%{count}y"
+        over_x_years:
+          one:   "> 1y"
+          other: "> %{count}y"
+        almost_x_years:
+          one:   "1y"
+          other: "%{count}y"
     share:
       topic: 'share a link to this topic'
       post: 'share a link to this post'
@@ -435,6 +471,10 @@ en:
       no_results: "No results found."
       searching: "Searching ..."
 
+      prefer:
+        user: "search will prefer results by @{{username}}"
+        category: "search will prefer results in {{category}}"
+
     site_map: "go to another topic list or category"
     go_back: 'go back'
     current_user: 'go to your user page'
@@ -501,6 +541,23 @@ en:
       toggle_information: "toggle topic details"
       read_more_in_category: "Want to read more? Browse other topics in {{catLink}} or {{latestLink}}."
       read_more: "Want to read more? {{catLink}} or {{latestLink}}."
+
+      # keys ending with _MF use message format, see /spec/components/js_local_helper_spec.rb for samples
+      read_more_MF: "There {
+        UNREAD, plural,
+        =0 {}
+        one {
+          is <a href='/unread'>1 unread</a>
+        } other {
+          are <a href='/unread'># unread</a>
+        }
+        } {
+          NEW, plural,
+            =0 {}
+            one { {BOTH, select, true{and } false {is } other{}} <a href='/new'>1 new</a> topic}
+            other { {BOTH, select, true{and } false {are } other{}} <a href='/new'># new</a> topics}
+        } remaining, or {CATEGORY, select, true {browse other topics in {catLink}} false {{latestLink}} other {}} "
+
       browse_all_categories: Browse all categories
 
       view_latest_topics: view latest topics
@@ -808,7 +865,7 @@ en:
       delete_confirm: "Are you sure you want to delete this category?"
       delete_error: "There was an error deleting the category."
       list: "List Categories"
-      no_description: "There is no description for this category."
+      no_description: "There is no description for this category, edit the topic definition."
       change_in_category_topic: "Edit Description"
       hotness: "Hotness"
       already_used: 'This color has been used by another category'
@@ -822,6 +879,7 @@ en:
     flagging:
       title: 'Why are you flagging this post?'
       action: 'Flag Post'
+      take_action: "Take Action"
       notify_action: 'Notify'
       cant: "Sorry, you can't flag this post at this time."
       custom_placeholder_notify_user: "Why does this post require you to speak to this user directly and privately? Be specific, be constructive, and always be kind."
@@ -926,6 +984,7 @@ en:
         no_problems: "No problems were found."
         moderators: 'Moderators:'
         admins: 'Admins:'
+        blocked: 'Blocked:'
         private_messages_short: "PMs"
         private_messages_title: "Private Messages"
 
@@ -956,6 +1015,7 @@ en:
         flagged_by: "Flagged by"
         error: "Something went wrong"
         view_message: "view message"
+        no_results: "There are no flags."
 
       groups:
         title: "Groups"
@@ -988,14 +1048,23 @@ en:
         delete_confirm: "Delete this customization?"
         about: "Site Customization allow you to modify stylesheets and headers on the site. Choose or add one to start editing."
 
-      email_logs:
+      email:
         title: "Email"
+        settings: "Settings"
+        logs: "Logs"
         sent_at: "Sent At"
         email_type: "Email Type"
         to_address: "To Address"
         test_email_address: "email address to test"
         send_test: "send test email"
         sent_test: "sent!"
+        delivery_method: "Delivery Method"
+        preview_digest: "Preview Digest"
+        refresh: "Refresh"
+        format: "Format"
+        html: "html"
+        text: "text"
+        last_seen_user: "Last Seen User:"
 
       impersonate:
         title: "Impersonate User"
@@ -1027,6 +1096,7 @@ en:
           elder: 'Users at Trust Level 4 (Elder)'
           admins: 'Admin Users'
           moderators: 'Moderators'
+          blocked: 'Blocked Users'
 
       user:
         ban_failed: "Something went wrong banning this user {{error}}"
@@ -1038,6 +1108,7 @@ en:
         banned: "Banned?"
         moderator: "Moderator?"
         admin: "Admin?"
+        blocked: "Blocked?"
         show_admin_profile: "Admin"
         refresh_browsers: "Force browser refresh"
         show_public_profile: "Show Public Profile"
@@ -1046,6 +1117,8 @@ en:
         grant_admin: 'Grant Admin'
         revoke_moderation: 'Revoke Moderation'
         grant_moderation: 'Grant Moderation'
+        unblock: 'Unblock'
+        block: 'Block'
         reputation: Reputation
         permissions: Permissions
         activity: Activity
@@ -1071,6 +1144,10 @@ en:
         activate_failed: "There was a problem activating the user."
         deactivate_account: "Deactivate Account"
         deactivate_failed: "There was a problem deactivating the user."
+        unblock_failed: 'There was a problem unblocking the user.'
+        block_failed: 'There was a problem blocking the user.'
+        block_explanation: "A blocked user can't post or start topics."
+
 
       site_content:
         none: "Choose a type of content to begin editing."

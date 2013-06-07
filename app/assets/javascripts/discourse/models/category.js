@@ -15,7 +15,7 @@ Discourse.Category = Discourse.Model.extend({
   },
 
   searchContext: function() {
-    return ({ type: 'category', id: this.get('id') });
+    return ({ type: 'category', id: this.get('id'), category: this });
   }.property('id'),
 
   url: function() {
@@ -80,6 +80,14 @@ Discourse.Category.reopenClass({
       text_color: Discourse.SiteSettings.uncategorized_text_color
     });
     return this.uncategorized;
+  },
+
+  slugFor: function(category) {
+    if (!category) return "";
+    var id = Em.get(category, 'id');
+    var slug = Em.get(category, 'slug');
+    if ((!slug) || slug.isBlank()) return "" + id + "-category";
+    return slug;
   },
 
   list: function() {
