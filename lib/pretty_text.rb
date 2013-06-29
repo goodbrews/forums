@@ -81,12 +81,12 @@ module PrettyText
     @ctx["helpers"] = Helpers.new
 
     ctx_load( "app/assets/javascripts/external/md5.js",
+              "app/assets/javascripts/external/lodash.js",
               "app/assets/javascripts/external/Markdown.Converter.js",
               "app/assets/javascripts/external/twitter-text-1.5.0.js",
               "lib/headless-ember.js",
               "app/assets/javascripts/external/rsvp.js",
-              Rails.configuration.ember.handlebars_location,
-              "app/assets/javascripts/external_production/sugar-1.3.5.js")
+              Rails.configuration.ember.handlebars_location)
 
     @ctx.eval("var Discourse = {}; Discourse.SiteSettings = #{SiteSetting.client_settings_json};")
     @ctx.eval("var window = {}; window.devicePixelRatio = 2;") # hack to make code think stuff is retina
@@ -151,20 +151,18 @@ module PrettyText
   def self.apply_cdn(html, url)
     return html unless url
 
-    image = /\.(jpg|jpeg|gif|png|tiff|tif)$/
+    image = /\.(jpg|jpeg|gif|png|tiff|tif|bmp)$/
 
     doc = Nokogiri::HTML.fragment(html)
+
     doc.css("a").each do |l|
-      href = l.attributes["href"].to_s
-      if href[0] == '/' && href =~ image
-        l["href"] = url + href
-      end
+      href = l["href"].to_s
+      l["href"] = url + href if href[0] == '/' && href =~ image
     end
+
     doc.css("img").each do |l|
-      src = l.attributes["src"].to_s
-      if src[0] == '/'
-        l["src"] = url + src
-      end
+      src = l["src"].to_s
+      l["src"] = url + src if src[0] == '/'
     end
 
     doc.to_s

@@ -133,6 +133,10 @@ class Guardian
     can_administer?(user) && not(user.moderator?)
   end
 
+  def can_grant_title?(user)
+    user && is_staff?
+  end
+
   def can_block_user?(user)
     user && is_staff? && not(user.staff?)
   end
@@ -176,11 +180,13 @@ class Guardian
     is_me?(user)
   end
 
-  # For now, can_invite_to is basically can_see?
   def can_invite_to?(object)
-    authenticated? && can_see?(object) &&
-    not(SiteSetting.must_approve_users?) &&
-    (@user.has_trust_level?(:regular) || is_staff?)
+    authenticated? &&
+    can_see?(object) &&
+    (
+      (!SiteSetting.must_approve_users? && @user.has_trust_level?(:regular)) ||
+      is_staff?
+    )
   end
 
   def can_see_deleted_posts?
@@ -193,6 +199,10 @@ class Guardian
 
   def can_delete_all_posts?(user)
     is_staff? && user.created_at >= 7.days.ago
+  end
+
+  def can_remove_allowed_users?(topic)
+    is_staff?
   end
 
   # Support for ensure_{blah}! methods.

@@ -14,6 +14,7 @@ Discourse.ListTopicsView = Discourse.View.extend(Discourse.Scrolling, {
   listBinding: 'controller.model',
   loadedMore: false,
   currentTopicId: null,
+
   topicTrackingState: function() {
     return Discourse.TopicTrackingState.current();
   }.property(),
@@ -65,7 +66,7 @@ Discourse.ListTopicsView = Discourse.View.extend(Discourse.Scrolling, {
       if (!hasMoreResults) {
         listTopicsView.get('eyeline').flushRest();
       }
-    })
+    });
   },
 
   // Remember where we were scrolled to

@@ -1,10 +1,10 @@
 # Discourse Install Guide on Ubuntu
 
-## Install Ubuntu 12.04 with the package groups:
+## Install Ubuntu Server 12.04 LTS with the package groups:
 
 ![screenshot of package group selection screen](https://raw.github.com/discourse/discourse-docimages/master/install/ubuntu%20-%20install%20-%20software%20selection.png)
 
-* Basic ubuntu server
+* Basic Ubuntu server
 * OpenSSH server
 * Mail server
 * PostgreSQL database (9.1+)
@@ -108,14 +108,14 @@ If you instead want to use apache2 to serve the static pages:
     
     # Now activate them all
     
-    sudo a2nsite your-domain.com
+    sudo a2ensite your-domain.com
     sudo a2enmod passenger
     sudo service apache2 reload
     sudo service apache2 restart
 
 If you get any errors starting or reloading apache, please check the paths above - Ruby 2.0 should be there if you are using RVM, but it could get tricky.
 
-## Install rvm and ruby environment
+## Install Ruby with RVM
 
 ### RVM Option: Systemwide installation
 
@@ -140,7 +140,7 @@ below.
 
 ## Discourse setup
 
-Create discourse user:
+Create Discourse user:
 
     # Run these commands as your normal login (e.g. "michael")
     sudo adduser --shell /bin/bash discourse
@@ -148,7 +148,7 @@ Create discourse user:
     # In that case, you could just not run it if errors make you squirrely
     sudo adduser discourse rvm
 
-Give postgres DB rights to the `discourse` user:
+Give Postgres database rights to the `discourse` user:
 
     # Run these commands as your normal login (e.g. "michael")
     sudo -u postgres createuser -s discourse
@@ -179,7 +179,7 @@ Install RVM if doing a single-user RVM installation:
     # and rvm will tell you which packages you (or your sysadmin) need
     # to install before it can proceed. Do that and then resume next:
 
-Continue with discourse installation
+Continue with Discourse installation
 
     # Build and install ruby
     rvm install 2.0.0
@@ -195,7 +195,7 @@ Continue with discourse installation
 
 _If you have errors building the native extensions, ensure you have sufficient free system memory. 1GB with no swap isn't enough, we recommend having 2GB as a minimum._
 
-Configure discourse:
+Configure Discourse:
 
     # Run these commands as the discourse user
     cd ~/discourse/config
@@ -204,31 +204,31 @@ Configure discourse:
     cp discourse.pill.sample discourse.pill
     cp environments/production.rb.sample environments/production.rb
 
-Edit discourse/config/database.yml
+Edit ~/discourse/config/database.yml
 
 - change production db name if appropriate
 - change username/password if appropriate
-- set db_id if using multisite
+- set `db_id` if using multisite
 - change `host_names` to the name you'll use to access the discourse site
 
-Edit discourse/config/redis.yml
+Edit ~/discourse/config/redis.yml
 
 - no changes if this is the only application using redis, but have a look
 
-Edit discourse/config/discourse.pill
+Edit ~/discourse/config/discourse.pill
 
 - change application name from 'discourse' if necessary
 - Ensure appropriate Bluepill.application line is uncommented
 - search for "host to run on" and change to current hostname
 - note: clockwork should run on only one host
 
-Edit discourse/config/initializers/secret_token.rb
+Edit ~/discourse/config/initializers/secret_token.rb
 
 - uncomment secret_token line
-- replace SET_SECRET_HERE with secret output from 'rake secret' command in discourse directory
+- replace SET_SECRET_HERE with secret output from 'RAILS_ENV=production rake secret' command in discourse directory
 - delete the lines below as per instructions in the file
 
-Edit discourse/config/environments/production.rb
+Edit ~/discourse/config/environments/production.rb
 - check settings, modify smtp settings if necessary
 - See http://meta.discourse.org/t/all-of-my-internal-users-show-as-coming-from-127-0-0-1/6607 if this will serve "internal" users
 
@@ -236,9 +236,21 @@ Initialize the database:
 
     # Run these commands as the discourse user
     # The database name here should match the production one in database.yml
+    cd ~/discourse
     createdb discourse_prod
     RUBY_GC_MALLOC_LIMIT=90000000 RAILS_ENV=production rake db:migrate
     RUBY_GC_MALLOC_LIMIT=90000000 RAILS_ENV=production rake assets:precompile
+
+Not english? Set the default language as appropriate:
+
+    # Run these commands as the discourse user
+    cd ~/discourse
+    RAILS_ENV=production bundle exec rails c
+    SiteSetting.default_locale = 'fr'
+
+    # Not sure if your locale is supported? Check at the rails console:
+    LocaleSiteSetting.values
+     => ["cs", "da", "de", "en", "es", "fr", "id", "it", "nb_NO", "nl", "pseudo", "pt", "ru", "sv", "zh_CN", "zh_TW"] 
 
 ## nginx setup
 
@@ -248,7 +260,12 @@ Initialize the database:
 Edit /etc/nginx/nginx.conf:
 
 - add: `server_names_hash_bucket_size 64;` to the `http` section
-- uncomment: `gzip on;`
+
+If discourse will be the only site served by nginx, disable the nginx default
+site:
+
+- `sudo mv /etc/nginx/conf.d/default.conf /etc/nginx/conf.d/default.conf.disabled`
+- Otherwise, only `server_name`s configured below in `discourse.conf` will be passed to Discourse.
 
 Edit /etc/nginx/conf.d/discourse.conf
 
@@ -263,7 +280,7 @@ Reload nginx by running
 
 ## Bluepill setup
 
-Configure bluepill:
+Configure Bluepill:
 
     # Run these commands as the discourse user
     gem install bluepill
@@ -276,14 +293,22 @@ Start Discourse:
     # Run these commands as the discourse user
     RUBY_GC_MALLOC_LIMIT=90000000 RAILS_ROOT=~/discourse RAILS_ENV=production NUM_WEBS=4 bluepill --no-privileged -c ~/.bluepill load ~/discourse/config/discourse.pill
 
-Add the bluepill startup to crontab.
+Add the Bluepill startup to crontab.
 
     # Run these commands as the discourse user
     crontab -e
 
-Add the following line:
+Add the following lines:
 
     @reboot RUBY_GC_MALLOC_LIMIT=90000000 RAILS_ROOT=~/discourse RAILS_ENV=production NUM_WEBS=4 /home/discourse/.rvm/bin/bootup_bluepill --no-privileged -c ~/.bluepill load ~/discourse/config/discourse.pill
+
+
+Note: in case of RVM system-wide installation RVM will be located in `/usr/local/rvm` directory instead of `/home/discourse/.rvm`, so update the line above respectively.
+
+## Log rotation setup
+
+    # Disabled for now - log rotation isn't *quite* complete
+    #0 0 * * * /usr/sbin/logrotate ~/discourse/config/logrotate.conf
 
 Congratulations! You've got Discourse installed and running!
 
@@ -296,8 +321,27 @@ and create an account by logging in normally, then run the commands:
 
     # (in rails console)
     > me = User.find_by_username_or_email('myemailaddress@me.com')[0]
+    > me.activate #use this in case you haven't configured your mail server and therefore can't receive the activation mail.
     > me.admin = true
     > me.save
+
+At this point we recommend you start going through the various items in the
+[Discourse Admin Quick Start Guide](https://github.com/discourse/discourse/wiki/The-Discourse-Admin-Quick-Start-Guide)
+to further prepare your site for users.
+
+## Site localization
+
+Custom assets such as images should be placed somewhere under:
+
+    DISCOURSE_HOME/public/
+
+For example, create a `local` directory and place it into:
+
+    DISCOURSE_HOME/public/uploads/local/michael.png
+
+The corresponding site setting is:
+
+    logo_small_url: /uploads/local/michael.png
 
 ## Updating Discourse
 
@@ -314,3 +358,5 @@ and create an account by logging in normally, then run the commands:
     RUBY_GC_MALLOC_LIMIT=90000000 RAILS_ENV=production rake db:migrate
     RUBY_GC_MALLOC_LIMIT=90000000 RAILS_ENV=production rake assets:precompile
     bluepill start
+
+Note that if bluepill *itself* needs to be restarted, it must be killed with `bluepill quit` and restarted with the same command that's in crontab

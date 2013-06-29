@@ -23,6 +23,15 @@ describe SessionController do
         end
       end
 
+      describe 'banned user' do
+        it 'should return an error' do
+          User.any_instance.stubs(:is_banned?).returns(true)
+          User.any_instance.stubs(:banned_till).returns(2.days.from_now)
+          xhr :post, :create, login: user.username, password: 'myawesomepassword'
+          ::JSON.parse(response.body)['error'].should be_present
+        end
+      end
+
       describe 'success by username' do
         before do
           xhr :post, :create, login: user.username, password: 'myawesomepassword'
@@ -76,21 +85,42 @@ describe SessionController do
           it "doesn't log in the user" do
             session[:current_user_id].should be_blank
           end
+
+          it "shows the 'not approved' error message" do
+            expect(JSON.parse(response.body)['error']).to eq(
+              I18n.t('login.not_approved')
+            )
+          end
         end
       end
     end
 
     context 'when email has not been confirmed' do
-      before do
+      def post_login
         xhr :post, :create, login: user.email, password: 'myawesomepassword'
       end
 
       it "doesn't log in the user" do
+        post_login
         session[:current_user_id].should be_blank
       end
 
-      it 'returns an error message' do
-        ::JSON.parse(response.body)['error'].should be_present
+      it "shows the 'not activated' error message" do
+        post_login
+        expect(JSON.parse(response.body)['error']).to eq(
+          I18n.t 'login.not_activated'
+        )
+      end
+
+      context "and the 'must approve users' site setting is enabled" do
+        before { SiteSetting.expects(:must_approve_users?).returns(true) }
+
+        it "shows the 'not approved' error message" do
+          post_login
+          expect(JSON.parse(response.body)['error']).to eq(
+            I18n.t 'login.not_approved'
+          )
+        end
       end
     end
   end

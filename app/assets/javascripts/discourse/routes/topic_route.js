@@ -34,7 +34,7 @@ Discourse.TopicRoute = Discourse.Route.extend({
     },
 
     showPrivateInvite: function() {
-      Discourse.Route.showModal(this, 'invitePrivate', this.modelFor('topic'))
+      Discourse.Route.showModal(this, 'invitePrivate', this.modelFor('topic'));
       this.controllerFor('invitePrivate').setProperties({
         email: null,
         error: false,
@@ -46,7 +46,7 @@ Discourse.TopicRoute = Discourse.Route.extend({
     showHistory: function(post) {
       Discourse.Route.showModal(this, 'history', post);
       this.controllerFor('history').refresh();
-      this.controllerFor('modal').set('modalClass', 'history-modal')
+      this.controllerFor('modal').set('modalClass', 'history-modal');
     },
 
     mergeTopic: function() {
@@ -88,8 +88,11 @@ Discourse.TopicRoute = Discourse.Route.extend({
     var headerController, topicController;
     topicController = this.controllerFor('topic');
     topicController.cancelFilter();
+    topicController.unsubscribe();
+
     topicController.set('multiSelect', false);
     this.controllerFor('composer').set('topic', null);
+    Discourse.ScreenTrack.instance().stop();
 
     if (headerController = this.controllerFor('header')) {
       headerController.set('topic', null);
@@ -99,8 +102,16 @@ Discourse.TopicRoute = Discourse.Route.extend({
 
   setupController: function(controller, model) {
     controller.set('model', model);
-    this.controllerFor('header').set('topic', model);
+    this.controllerFor('header').setProperties({
+      topic: model,
+      showExtraInfo: false
+    });
     this.controllerFor('composer').set('topic', model);
+    Discourse.TopicTrackingState.current().trackIncoming('all');
+    controller.subscribe();
+
+    // We reset screen tracking every time a topic is entered
+    Discourse.ScreenTrack.instance().start(model.get('id'));
   }
 
 });

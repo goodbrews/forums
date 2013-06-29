@@ -15,14 +15,14 @@ Discourse.CategoryList.reopenClass({
     var users = this.extractByKey(result.featured_users, Discourse.User);
 
 
-    result.category_list.categories.each(function(c) {
+    _.each(result.category_list.categories,function(c) {
       if (c.featured_user_ids) {
-        c.featured_users = c.featured_user_ids.map(function(u) {
+        c.featured_users = _.map(c.featured_user_ids,function(u) {
           return users[u];
         });
       }
       if (c.topics) {
-        c.topics = c.topics.map(function(t) {
+        c.topics = _.map(c.topics,function(t) {
           return Discourse.Topic.create(t);
         });
       }
@@ -49,10 +49,10 @@ Discourse.CategoryList.reopenClass({
     var finder = null;
     if (filter === 'categories') {
       finder = PreloadStore.getAndRemove("categories_list", function() {
-        return Discourse.ajax("/categories.json")
+        return Discourse.ajax("/categories.json");
       });
     } else {
-      finder = Discourse.ajax("/" + filter + ".json")
+      finder = Discourse.ajax("/" + filter + ".json");
     }
 
     return finder.then(function(result) {
@@ -63,7 +63,7 @@ Discourse.CategoryList.reopenClass({
         categories: route.categoriesFrom(result),
         draft_key: result.category_list.draft_key,
         draft_sequence: result.category_list.draft_sequence
-      })
+      });
       return categoryList;
     });
   }

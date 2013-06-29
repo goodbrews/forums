@@ -44,7 +44,7 @@ Discourse.Topic = Discourse.Model.extend({
 
   url: function() {
     var slug = this.get('slug');
-    if (slug.isBlank()) {
+    if (slug.trim().length === 0) {
       slug = "topic";
     }
     return Discourse.getURL("/t/") + slug + "/" + (this.get('id'));
@@ -69,16 +69,19 @@ Discourse.Topic = Discourse.Model.extend({
 
   // The last post in the topic
   lastPost: function() {
-    return this.get('posts').last();
+    var posts = this.get('posts');
+    return posts[posts.length-1];
   },
 
   postsChanged: function() {
     var last, posts;
     posts = this.get('posts');
-    last = posts.last();
+    last = posts[posts.length - 1];
     if (!(last && last.set && !last.lastPost)) return;
-    posts.each(function(p) {
-      if (p.lastPost) return p.set('lastPost', false);
+    _.each(posts,function(p) {
+      if (p.lastPost) {
+        p.set('lastPost', false);
+      }
     });
     last.set('lastPost', true);
     return true;
@@ -144,6 +147,17 @@ Discourse.Topic = Discourse.Model.extend({
     return Discourse.ajax(this.get('url') + "/status", {
       type: 'PUT',
       data: {status: property, enabled: this.get(property) ? 'true' : 'false' }
+    });
+  },
+
+  removeAllowedUser: function(username) {
+    var allowedUsers = this.get('allowed_users');
+
+    return Discourse.ajax("/t/" + this.get('id') + "/remove-allowed-user", {
+      type: 'PUT',
+      data: { username: username }
+    }).then(function(){
+      allowedUsers.removeObject(allowedUsers.find(function(item){ return item.username === username; }));
     });
   },
 
@@ -232,7 +246,7 @@ Discourse.Topic = Discourse.Model.extend({
       opts.nearPost = parseInt(opts.nearPost, 10);
       closestPostNumber = 0;
       postDiff = Number.MAX_VALUE;
-      result.posts.each(function(p) {
+      _.each(result.posts,function(p) {
         var diff = Math.abs(p.post_number - opts.nearPost);
         if (diff < postDiff) {
           postDiff = diff;
@@ -263,7 +277,7 @@ Discourse.Topic = Discourse.Model.extend({
 
       // Okay this is weird, but let's store the length of the next post when there
       lastPost = null;
-      result.posts.each(function(p) {
+      _.each(result.posts,function(p) {
         p.scrollToAfterInsert = opts.nearPost;
         var post = Discourse.Post.create(p);
         post.set('topic', topic);
@@ -271,8 +285,9 @@ Discourse.Topic = Discourse.Model.extend({
         lastPost = post;
       });
 
+      topic.set('allowed_users', Em.A(result.allowed_users));
       topic.set('loaded', true);
-    }
+    };
 
     var errorLoadingTopic = function(result) {
 
@@ -280,22 +295,22 @@ Discourse.Topic = Discourse.Model.extend({
 
       // If the result was 404 the post is not found
       if (result.status === 404) {
-        topic.set('errorTitle', Em.String.i18n('topic.not_found.title'))
+        topic.set('errorTitle', Em.String.i18n('topic.not_found.title'));
         topic.set('message', Em.String.i18n('topic.not_found.description'));
         return;
       }
 
       // If the result is 403 it means invalid access
       if (result.status === 403) {
-        topic.set('errorTitle', Em.String.i18n('topic.invalid_access.title'))
+        topic.set('errorTitle', Em.String.i18n('topic.invalid_access.title'));
         topic.set('message', Em.String.i18n('topic.invalid_access.description'));
         return;
       }
 
       // Otherwise supply a generic error message
-      topic.set('errorTitle', Em.String.i18n('topic.server_error.title'))
+      topic.set('errorTitle', Em.String.i18n('topic.server_error.title'));
       topic.set('message', Em.String.i18n('topic.server_error.description'));
-    }
+    };
 
     // Finally, call our find method
     return Discourse.Topic.find(this.get('id'), {
@@ -327,12 +342,12 @@ Discourse.Topic = Discourse.Model.extend({
     var map, posts;
     map = {};
     posts = this.get('posts');
-    posts.each(function(p) {
-      map["" + p.post_number] = true;
+    _.each(posts,function(post) {
+      map["" + post.post_number] = true;
     });
-    return newPosts.each(function(p) {
-      if (!map[p.get('post_number')]) {
-        return posts.pushObject(p);
+    _.each(newPosts,function(post) {
+      if (!map[post.get('post_number')]) {
+        posts.pushObject(post);
       }
     });
   },
@@ -445,7 +460,7 @@ Discourse.Topic.reopenClass({
     return PreloadStore.getAndRemove("topic_" + topicId, function() {
       return Discourse.ajax(url + ".json", {data: data});
     }).then(function(result) {
-      var first = result.posts.first();
+      var first = result.posts[0];
       if (first && opts && opts.bestOf) {
         first.bestOfFirst = true;
       }
@@ -476,19 +491,21 @@ Discourse.Topic.reopenClass({
   },
 
   create: function(obj, topicView) {
-    return Object.tap(this._super(obj), function(result) {
-      if (result.participants) {
-        result.participants = result.participants.map(function(u) {
-          return Discourse.User.create(u);
-        });
-        result.fewParticipants = Em.A();
-        return result.participants.each(function(p) {
-          if (result.fewParticipants.length >= 8) return false;
-          result.fewParticipants.pushObject(p);
-          return true;
-        });
-      }
-    });
+    var result = this._super(obj);
+
+    if (result.participants) {
+      result.participants = _.map(result.participants,function(u) {
+        return Discourse.User.create(u);
+      });
+      result.fewParticipants = Em.A();
+      _.each(result.participants,function(p) {
+        // TODO should not be hardcoded
+        if (result.fewParticipants.length >= 8) return false;
+        result.fewParticipants.pushObject(p);
+      });
+    }
+
+    return result;
   }
 
 });

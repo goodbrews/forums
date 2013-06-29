@@ -649,7 +649,6 @@ es:
         delete: "elimina esta publicación"
         undelete: "deshace la eliminación de esta publicación"
         share: "comparte un enlace a esta publicación"
-        bookmark: "marca esta publicación como favorita en tu página de usuario"
         more: "Más"
 
       actions:
@@ -870,7 +869,7 @@ es:
         permissions: Permisos
         activity: Actividad
         like_count: Me gusta Recibidos
-        private_topics_count: Private Topics Count
+        private_topics_count: Private Topics
         posts_read_count: Posts Read
         post_count: Posts Created
         topics_entered: Topics Entered

@@ -302,80 +302,80 @@ fr:
 
   reports:
     visits:
-      title: Visites utilisateur par jour
-      xaxis: Jour
-      yaxis: Nombre de visites
+      title: "Visites utilisateur par jour"
+      xaxis: "Jour"
+      yaxis: "Nombre de visites"
     signups:
-      title: Nouveaux utilisateurs
-      xaxis: Jour
+      title: "Nouveaux utilisateurs"
+      xaxis: "Jour"
       yaxis: "Nombre d'utilisateurs"
     topics:
-      title: Nouvelles discussions
-      xaxis: Jour
-      yaxis: Nombre de discussions
+      title: "Nouvelles discussions"
+      xaxis: "Jour"
+      yaxis: "Nombre de discussions"
     posts:
-      title: Nouveaux messages
-      xaxis: Jour
-      yaxis: Nombre de messages
+      title: "Nouveaux messages"
+      xaxis: "Jour"
+      yaxis: "Nombre de messages"
     likes:
-      title: Nouveau Likes
-      xaxis: Jour
-      yaxis: Nombre de Likes
+      title: "Nouveau Likes"
+      xaxis: "Jour"
+      yaxis: "Nombre de Likes"
     flags:
-      title: Nouveaux Signalements
-      xaxis: Jour
-      yaxis: Nombre de signalements
+      title: "Nouveaux Signalements"
+      xaxis: "Jour"
+      yaxis: "Nombre de signalements"
     bookmarks:
-      title: Signets
-      xaxis: Jour
-      yaxis: Nombre de nouveaux signets
+      title: "Signets"
+      xaxis: "Jour"
+      yaxis: "Nombre de nouveaux signets"
     favorites:
-      title: Favoris
-      xaxis: Jour
-      yaxis: Nombre de nouveaux favoris
+      title: "Favoris"
+      xaxis: "Jour"
+      yaxis: "Nombre de nouveaux favoris"
     users_by_trust_level:
-      title: Utilisateurs par niveau de confiance
-      xaxis: Niveau de confiance
+      title: "Utilisateurs par niveau de confiance"
+      xaxis: "Niveau de confiance"
       yaxis: "Nombre d'utilisateurs"
     emails:
-      title: Emails envoyés
-      xaxis: Jour
+      title: "Emails envoyés"
+      xaxis: "Jour"
       yaxis: "Nombre d'emails"
     user_to_user_private_messages:
-      title: Utilisateur à Utilisateur
-      xaxis: Jour
-      yaxis: Nombre de messages privés
+      title: "Utilisateur à Utilisateur"
+      xaxis: "Jour"
+      yaxis: "Nombre de messages privés"
     system_private_messages:
-      title: Système
-      xaxis: Jour
-      yaxis: Nombre de messages privés
+      title: "Système"
+      xaxis: "Jour"
+      yaxis: "Nombre de messages privés"
     moderator_warning_private_messages:
-      title: Avertissements
-      xaxis: Jour
-      yaxis: Nombre de messages privés
+      title: "Avertissements"
+      xaxis: "Jour"
+      yaxis: "Nombre de messages privés"
     notify_moderators_private_messages:
-      title: Notifications Modérateur
-      xaxis: Jour
-      yaxis: Nombre de messages privés
+      title: "Notifications Modérateur"
+      xaxis: "Jour"
+      yaxis: "Nombre de messages privés"
     notify_user_private_messages:
-      title: Notifications Utilisateur
-      xaxis: Jour
-      yaxis: Nombre de messages privés
+      title: "Notifications Utilisateur"
+      xaxis: "Jour"
+      yaxis: "Nombre de messages privés"
     top_referrers:
-      title: Meilleurs référants
-      xaxis: Utilisateurs
-      num_clicks: Clics
-      num_topics: Discussions
+      title: "Meilleurs référants"
+      xaxis: "Utilisateurs"
+      num_clicks: "Clics"
+      num_topics: "Discussions"
     top_traffic_sources:
-      title: Meilleures sources de traffic
-      xaxis: Domaine
-      num_clicks: Clics
-      num_topics: Discussions
-      num_users: Utilisateurs
+      title: "Meilleures sources de traffic"
+      xaxis: "Domaine"
+      num_clicks: "Clics"
+      num_topics: "Discussions"
+      num_users: "Utilisateurs"
     top_referred_topics:
-      title: Discussions les plus référencées
-      xaxis: Discussion
-      num_clicks: Clics
+      title: "Discussions les plus référencées"
+      xaxis: "Discussion"
+      num_clicks: "Clics"
 
   dashboard:
     rails_env_warning: "Votre serveur fonctionne dans l'environnement de %{env}."
@@ -394,7 +394,7 @@ fr:
     contact_email_missing: "Vous n'avez pas renseigné d'email de contact pour votre site. Merci de mettre à jour le <a href='/admin/site_settings'>paramètre de site</a> : contact_email."
     contact_email_invalid: "L'email de contact du site est invalide. Merci de mettre à jour le <a href='/admin/site_settings'>paramètre de site</a> : contact_email."
     title_nag: "Le titre de votre site est toujours à sa valeur par défaut. Merci de le modifier dans les <a href='/admin/site_settings'>paramètres du site</a>."
-    gmail_for_email_warning: "Votre site est configuré pour envoyer les emails en utilisant Gmail. <a href='http://support.google.com/a/bin/answer.py?hl=fr&answer=166852' target='_blank'>Gmail limite le nombre d'emails que vous pouvez envoyer</a>. Nous vous conseillons d'utiliser un autre service d'envoi d'emails afin d'assurer une meilleure délivrabilité."
+    consumer_email_warning: "Votre site est configuré pour envoyer les emails en utilisant Gmail. <a href='http://support.google.com/a/bin/answer.py?hl=fr&answer=166852' target='_blank'>Gmail limite le nombre d'emails que vous pouvez envoyer</a>. Nous vous conseillons d'utiliser un autre service d'envoi d'emails afin d'assurer une meilleure délivrabilité."
 
   content_types:
     education_new_reply:
@@ -438,14 +438,9 @@ fr:
     company_short_name: "Le nom de la société qui gère ce site (utilisé dans les documents légaux, tels que /tos)"
     company_domain: "Le nom de domaine de la société qui gère ce site (utilisé dans les documents légaux, tels que /tos)"
     api_key: "La clé API sécurisé à utiliser pour créer et mettre à jour des discussions. Utilisez la section /admin/api pour la configurer."
-    access_password: "Si l'accès restreint est activé, assurez-vous que le mot de passe soit saisi ici."
     queue_jobs: "mettre les différents jobs en attente sur différentes queues, si false les queues sont en file"
     crawl_images: "permettre la récupération des images provenant de sources tierces"
     ninja_edit_window: "temps d'édition avant de sauvegarder une nouvelle version, en secondes."
-    enable_imgur: "utiliser l'envoi des images avec l'API imgur, ne pas stocker les fichiers localement"
-    imgur_client_id: "Votre ID client imgur.com. Requis pour que l'envoi d'images fonctionne."
-    imgur_client_secret: "Votre secret imgur.com. Pas nécessaire pour que l'envoi d'image fonctionne, mais pourrais le devenir."
-    imgur_endpoint: "point d'arrêt pour le chargement d'images sur imgur.com"
     max_image_width: "largeur maximale des images d'un message"
     category_featured_topics: "nombre de discussions affichées dans la liste par catégories"
     add_rel_nofollow_to_user_content: "Ajouter rel nofollow à tous les contenus des utilisateurs, sauf les liens internes (incluant les domaines parents) Modifier ceci requiert une mise à jour de tout votre markdown (<code>rake posts:rebake</code>)"
@@ -491,7 +486,7 @@ fr:
     posts_per_page: "Nombre de messages retournés sur une page de discussion"
     system_username: "Pseudo qui envoie les messages automatiques"
     send_welcome_message: "Les nouveaux utilisateurs reçoivent-ils un message privé de bienvenue ?"
-    supress_reply_directly_below: "Ne pas afficher les boutons de réponse sous un message lorsque la réponse est juste en dessous"
+    suppress_reply_directly_below: "Ne pas afficher les boutons de réponse sous un message lorsque la réponse est juste en dessous"
     allow_index_in_robots_txt: "Le site doit-être indexé par les moteurs de recherche (met à jour le fichier robots.txt)"
     email_domains_blacklist: "Liste des domaines d'email interdits, délimités par un pipe. Exemple: mailinator.com|trashmail.net"
     email_domains_whitelist: "Liste des domaines d'email autorisés, délimités par un pipe. ATTENTION : les utilisateurs ayant un email sur un autre domaine ne pourrons pas s'enregistrer."
@@ -555,6 +550,8 @@ fr:
 
     enable_s3_uploads: "S'il faut ou non uploader sur s3"
     s3_upload_bucket: "Le bucket dans lequel uploader sur s3"
+    s3_secret_access_key: "La clé secrète Amazon S3 qui va être utilisée pour uploader des images"
+    s3_region: "Le nom de la région Amazon S3 qui va être utilisée pour uploader des images"
 
     default_invitee_trust_level: "Le niveau de confiance par défaut des utilisateurs invités"
     default_trust_level: "Le niveau de confiance par défaut des utilisateurs"
@@ -571,7 +568,7 @@ fr:
     regular_requires_likes_given: "Combien de j'aime un utilisateur doit donner pour être promu au niveau régulier (2)"
     regular_requires_topic_reply_count: "Combien de réponses un utilisateur doit donner pour être promu au niveau régulier (2)"
 
-    auto_link_images_wider_than: ""
+    auto_link_images_wider_than: "Les images en lien automatiques doivent êtres plus larges que préciser"
 
     email_time_window_mins: "Combien de minutes attendre avant d'envoyer un mail à l'utilisateur, pour lui donner une chance de voir lui-même avant l'envoi."
     flush_timings_secs: "A quelle fréquence requêter les données de timing au serveur, en secondes."
@@ -717,15 +714,7 @@ fr:
 
       <small>Il devrait toujours y avoir un lien de déinscription dans le pied de page d'un mail. Donc en voici-un. Ce mail a été envoyé par Nom de la Société,  55 Main Street, Anytown, USA 12345. Si vous ne voulez plus recevoir nos e-mails, [cliquez ici pour vous désinscrire][5].</small>
 
-  request_access:
-    code: "Code d'accès"
-    instructions: "Ce site possède une zone restreinte, vous devez saisir le code d'accès pour entrer."
-    enter: "Entrer"
-    incorrect: "Le code d''accès est incorrect."
-
   system_messages:
-    site_password: "Si vous en avez besoin, le mot de passe du site est `%{access_password}`."
-
     post_hidden:
       subject_template: "%{site_name} Notice: Message caché suite à un signalement par la communauté"
       text_body_template: |
@@ -784,19 +773,6 @@ fr:
         - Pour effectuer une recherche, visiter votre profil, ou naviguer, cliquez sur les icônes en haut à droite.
 
         - Pendant que vous lisez une discussion, vous pouvez retourner au début en cliquant sur son titre situé en haut de l'écran. Pour atteindre la *fin*, cliquez sur la flèche vers le bas sur l'indiquateur de progression en bas de la page, ou cliquez sur le champ "dernier message" dans le résumé de la discussion, sous le premier message.
-
-    welcome_approved:
-      subject_template: "Vous avez été accepté sur %{site_name} !"
-      text_body_template: |
-        Félicitations !
-
-        Vous avez été accepté pour rejoindre %{site_name}, bienvenue sur notre forum de discussions.
-
-        %{new_user_tips}
-
-        Nous croyons au [comportement communautaire civilisé](%{base_url}/faq) en tous temps.
-
-        Amusez-vous bien !
 
     welcome_user:
       subject_template: "Bienvenue sur %{site_name} !"
@@ -968,6 +944,7 @@ fr:
   deleted: 'supprimmé'
 
   upload:
+    pasted_image_filename: "Image collée"
     image:
       fetch_failure: "Désolé, une erreur s'est produite lorsque nous avons essayé de récupérer l'image."
       unknown_image_type: "Désolé, mais le fichier que vous essayez d'envoyer ne semble pas être une image."

@@ -2,10 +2,7 @@ require 'spec_helper'
 require_dependency 'post_destroyer'
 
 describe Post do
-
-  before do
-    ImageSorcery.any_instance.stubs(:convert).returns(false)
-  end
+  before { Oneboxer.stubs :onebox }
 
   # Help us build a post with a raw body
   def post_with_body(body, user=nil)
@@ -25,6 +22,9 @@ describe Post do
 
   it { should have_many :post_replies }
   it { should have_many :replies }
+
+  it { should have_many :post_uploads }
+  it { should have_many :uploads }
 
   it { should rate_limit }
 
@@ -46,7 +46,7 @@ describe Post do
 
     describe '#with_user' do
       it 'gives you a user' do
-        Fabricate(:post, user: Fabricate(:user))
+        Fabricate(:post, user: Fabricate.build(:user))
         Post.with_user.first.user.should be_a User
       end
     end
@@ -54,25 +54,43 @@ describe Post do
   end
 
   describe "versions and deleting/recovery" do
-    let(:post) { Fabricate(:post, post_args) }
 
-    before do
-      post.trash!
-      post.reload
-    end
+    context 'a post without links' do
+      let(:post) { Fabricate(:post, post_args) }
 
-    it "doesn't create a new version when deleted" do
-      post.versions.count.should == 0
-    end
-
-    describe "recovery" do
       before do
-        post.recover!
+        post.trash!
         post.reload
       end
 
-      it "doesn't create a new version when recovered" do
+      it "doesn't create a new version when deleted" do
         post.versions.count.should == 0
+      end
+
+      describe "recovery" do
+        before do
+          post.recover!
+          post.reload
+        end
+
+        it "doesn't create a new version when recovered" do
+          post.versions.count.should == 0
+        end
+      end
+    end
+
+    context 'a post with links' do
+      let(:post) { Fabricate(:post_with_external_links) }
+      before do
+        post.trash!
+        post.reload
+      end
+
+      describe 'recovery' do
+        it 'recreates the topic_link records' do
+          TopicLink.expects(:extract_from).with(post)
+          post.recover!
+        end
       end
     end
 
@@ -365,8 +383,14 @@ describe Post do
 
   end
 
-  it 'validates' do
-    Fabricate.build(:post, post_args).should be_valid
+  context 'validation' do
+    it 'validates our default post' do
+      Fabricate.build(:post, post_args).should be_valid
+    end
+
+    it 'treate blank posts as invalid' do
+      Fabricate.build(:post, raw: "").should_not be_valid
+    end
   end
 
   context "raw_hash" do
@@ -395,8 +419,8 @@ describe Post do
       post.raw_hash.should == post_with_body(" thisis ourt est postbody").raw_hash
     end
 
-    it "returns the same hash even with different text case" do
-      post.raw_hash.should == post_with_body("THIS is OUR TEST post BODy").raw_hash
+    it "returns a different value with different text case" do
+      post.raw_hash.should_not == post_with_body("THIS is OUR TEST post BODy").raw_hash
     end
   end
 

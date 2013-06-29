@@ -8,9 +8,8 @@
 **/
 
 var oneWeekAgo = function() {
-  // TODO: Take out due to being evil sugar js?
-  return Date.create(7 + ' days ago', 'en').format('{yyyy}-{MM}-{dd}');
-}
+  return moment().subtract('days',7).format('YYYY-MM-DD');
+};
 
 Discourse.AdminEmailPreviewDigestRoute = Discourse.Route.extend(Discourse.ModelReady, {
 

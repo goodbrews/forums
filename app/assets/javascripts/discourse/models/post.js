@@ -64,13 +64,15 @@ Discourse.Post = Discourse.Model.extend({
     } else {
       if (this.get('read')) {
         result += ' seen';
+      } else {
+        result += ' unseen';
       }
     }
     return result;
   }.property('read', 'topic.last_read_post_number', 'bookmarked'),
 
   // Custom tooltips for the bookmark icons
-  bookmarkTooltip: (function() {
+  bookmarkTooltip: function() {
     var topic;
     if (this.get('bookmarked')) return Em.String.i18n('bookmarks.created');
     if (!this.get('read')) return "";
@@ -79,7 +81,7 @@ Discourse.Post = Discourse.Model.extend({
       return Em.String.i18n('bookmarks.last_read');
     }
     return Em.String.i18n('bookmarks.not_bookmarked');
-  }).property('read', 'topic.last_read_post_number', 'bookmarked'),
+  }.property('read', 'topic.last_read_post_number', 'bookmarked'),
 
   bookmarkedChanged: function() {
     var post = this;
@@ -114,7 +116,7 @@ Discourse.Post = Discourse.Model.extend({
     rightNow = new Date().getTime();
 
     // Show heat on age
-    updatedAtDate = Date.create(updatedAt).getTime();
+    updatedAtDate = new Date(updatedAt).getTime();
     if (updatedAtDate > (rightNow - 60 * 60 * 1000 * 12)) return 'heatmap-high';
     if (updatedAtDate > (rightNow - 60 * 60 * 1000 * 24)) return 'heatmap-med';
     if (updatedAtDate > (rightNow - 60 * 60 * 1000 * 48)) return 'heatmap-low';
@@ -162,7 +164,10 @@ Discourse.Post = Discourse.Model.extend({
 
       // We're saving a post
       data = {
-        post: this.getProperties('raw', 'topic_id', 'reply_to_post_number', 'category'),
+        raw: this.get('raw'),
+        topic_id: this.get('topic_id'),
+        reply_to_post_number: this.get('reply_to_post_number'),
+        category: this.get('category'),
         archetype: this.get('archetype'),
         title: this.get('title'),
         image_sizes: this.get('imageSizes'),
@@ -204,10 +209,11 @@ Discourse.Post = Discourse.Model.extend({
 
     // Update all the properties
     if (!obj) return;
-    Object.each(obj, function(key, val) {
-      if (key === 'actions_summary') return false;
-      if (val) {
-        post.set(key, val);
+    _.each(obj, function(val,key) {
+      if (key !== 'actions_summary'){
+        if (val) {
+          post.set(key, val);
+        }
       }
     });
 
@@ -215,7 +221,7 @@ Discourse.Post = Discourse.Model.extend({
     this.set('actions_summary', Em.A());
     if (obj.actions_summary) {
       var lookup = Em.Object.create();
-      obj.actions_summary.each(function(a) {
+      _.each(obj.actions_summary,function(a) {
         var actionSummary;
         a.post = post;
         a.actionType = Discourse.Site.instance().postActionTypeById(a.id);
@@ -235,7 +241,7 @@ Discourse.Post = Discourse.Model.extend({
     var parent = this;
     return Discourse.ajax("/posts/" + (this.get('id')) + "/replies").then(function(loaded) {
       var replies = parent.get('replies');
-      loaded.each(function(reply) {
+      _.each(loaded,function(reply) {
         var post = Discourse.Post.create(reply);
         post.set('topic', parent.get('topic'));
         replies.pushObject(post);
@@ -256,8 +262,8 @@ Discourse.Post = Discourse.Model.extend({
     // We don't show replies if there aren't any
     if (reply_count === 0) return false;
 
-    // Always show replies if the setting `supress_reply_directly_below` is false.
-    if (!Discourse.SiteSettings.supress_reply_directly_below) return true;
+    // Always show replies if the setting `suppress_reply_directly_below` is false.
+    if (!Discourse.SiteSettings.suppress_reply_directly_below) return true;
 
     // Always show replies if there's more than one
     if (reply_count > 1) return true;
@@ -289,7 +295,7 @@ Discourse.Post.reopenClass({
   create: function(obj, topic) {
     var result = this._super(obj);
     this.createActionSummary(result);
-    if (obj.reply_to_user) {
+    if (obj && obj.reply_to_user) {
       result.set('reply_to_user', Discourse.User.create(obj.reply_to_user));
     }
     result.set('topic', topic);

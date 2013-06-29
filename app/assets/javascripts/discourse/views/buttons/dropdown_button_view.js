@@ -14,7 +14,7 @@ Discourse.DropdownButtonView = Discourse.View.extend({
     // If there's a click handler, call it
     if (this.clicked) {
       var dropDownButtonView = this;
-      this.$('ul li').on('click', function(e) {
+      this.$('ul li').on('click.dropdown-button', function(e) {
         e.preventDefault();
         dropDownButtonView.clicked($(e.currentTarget).data('id'));
         return false;
@@ -23,7 +23,7 @@ Discourse.DropdownButtonView = Discourse.View.extend({
   },
 
   willDestroyElement: function(e) {
-    this.$('ul li').off('click');
+    this.$('ul li').off('click.dropdown-button');
   },
 
   textChanged: function() {
@@ -37,7 +37,7 @@ Discourse.DropdownButtonView = Discourse.View.extend({
     buffer.push("</button>");
     buffer.push("<ul class='dropdown-menu'>");
 
-    this.get('dropDownContent').each(function(row) {
+    _.each(this.get('dropDownContent'), function(row) {
       var id = row[0],
           textKey = row[1],
           title = Em.String.i18n(textKey + ".title"),

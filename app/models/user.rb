@@ -6,8 +6,12 @@ require_dependency 'summarize'
 require_dependency 'discourse'
 require_dependency 'post_destroyer'
 require_dependency 'user_name_suggester'
+require_dependency 'roleable'
+require_dependency 'pretty_text'
 
 class User < ActiveRecord::Base
+  include Roleable
+
   has_many :posts
   has_many :notifications
   has_many :topic_users
@@ -25,6 +29,7 @@ class User < ActiveRecord::Base
   has_many :invites
   has_many :topic_links
 
+  has_one :facebook_user_info, dependent: :destroy
   has_one :twitter_user_info, dependent: :destroy
   has_one :github_user_info, dependent: :destroy
   has_one :cas_user_info, dependent: :destroy
@@ -58,9 +63,6 @@ class User < ActiveRecord::Base
   # This is just used to pass some information into the serializer
   attr_accessor :notification_channel_position
 
-  scope :admins, -> { where(admin: true) }
-  scope :moderators, -> { where(moderator: true) }
-  scope :staff, -> { where("moderator or admin ") }
   scope :blocked, -> { where(blocked: true) } # no index
 
   module NewTopicDuration
@@ -133,35 +135,22 @@ class User < ActiveRecord::Base
   def self.find_by_username_or_email(username_or_email)
     lower_user = username_or_email.downcase
     lower_email = Email.downcase(username_or_email)
-    where("username_lower = :user or lower(username) = :user or email = :email or lower(name) = :user", user: lower_user, email: lower_email)
-  end
 
+    users =
+      if username_or_email.include?('@')
+        User.where(email: lower_email)
+      else
+        User.where(username_lower: lower_user)
+      end
+        .to_a
 
-  def save_and_refresh_staff_groups!
-    transaction do
-      self.save!
-      Group.refresh_automatic_groups!(:admins, :moderators, :staff)
+    if users.count > 1
+      raise Discourse::TooManyMatches
+    elsif users.count == 1
+      users[0]
+    else
+      nil
     end
-  end
-
-  def grant_moderation!
-    self.moderator = true
-    save_and_refresh_staff_groups!
-  end
-
-  def revoke_moderation!
-    self.moderator = false
-    save_and_refresh_staff_groups!
-  end
-
-  def grant_admin!
-    self.admin = true
-    save_and_refresh_staff_groups!
-  end
-
-  def revoke_admin!
-    self.admin = false
-    save_and_refresh_staff_groups!
   end
 
   def enqueue_welcome_message(message_type)
@@ -170,9 +159,10 @@ class User < ActiveRecord::Base
   end
 
   def change_username(new_username)
-    current_username, self.username = username, new_username
+    current_username = self.username
+    self.username = new_username
 
-    if SiteSetting.call_discourse_hub? && valid?
+    if current_username.downcase != new_username.downcase && SiteSetting.call_discourse_hub? && valid?
       begin
         DiscourseHub.change_nickname(current_username, new_username)
       rescue DiscourseHub::NicknameUnavailable
@@ -205,11 +195,12 @@ class User < ActiveRecord::Base
   end
 
   # Approve this user
-  def approve(approved_by)
+  def approve(approved_by, send_mail=true)
     self.approved = true
     self.approved_by = approved_by
     self.approved_at = Time.now
-    enqueue_welcome_message('welcome_approved') if save
+
+    send_approval_email if save and send_mail
   end
 
   def self.email_hash(email)
@@ -229,7 +220,6 @@ class User < ActiveRecord::Base
     @unread_pms = nil
     super
   end
-
 
   def unread_private_messages
     @unread_pms ||= notifications.where("read = false AND notification_type = ?", Notification.types[:private_message]).count
@@ -255,15 +245,6 @@ class User < ActiveRecord::Base
   # A selection of people to autocomplete on @mention
   def self.mentionable_usernames
     User.select(:username).order('last_posted_at desc').limit(20)
-  end
-
-  # any user that is either a moderator or an admin
-  def staff?
-    admin || moderator
-  end
-
-  def regular?
-    !staff?
   end
 
   def password=(password)
@@ -302,11 +283,12 @@ class User < ActiveRecord::Base
     end
   end
 
-  def update_last_seen!
-    now = DateTime.now
+  def update_last_seen!(now=nil)
+    now ||= Time.zone.now
     now_date = now.to_date
+
     # Only update last seen once every minute
-    redis_key = "user:#{self.id}:#{now_date.to_s}"
+    redis_key = "user:#{self.id}:#{now_date}"
     if $redis.setnx(redis_key, "1")
       $redis.expire(redis_key, SiteSetting.active_user_rate_limit_secs)
 
@@ -585,7 +567,8 @@ class User < ActiveRecord::Base
   def username_validator
     username_format_validator || begin
       lower = username.downcase
-      if username_changed? && User.where(username_lower: lower).exists?
+      existing = User.where(username_lower: lower).first
+      if username_changed? && existing && existing.id != self.id
         errors.add(:username, I18n.t(:'user.username.unique'))
       end
     end
@@ -615,7 +598,13 @@ class User < ActiveRecord::Base
     end
   end
 
-
+    def send_approval_email
+      Jobs.enqueue(:user_email,
+        type: :signup_after_approval,
+        user_id: id,
+        email_token: email_tokens.first.token
+      )
+    end
 end
 
 # == Schema Information
@@ -668,6 +657,8 @@ end
 #  likes_given                   :integer          default(0), not null
 #  likes_received                :integer          default(0), not null
 #  topic_reply_count             :integer          default(0), not null
+#  blocked                       :boolean          default(FALSE)
+#  dynamic_favicon               :boolean          default(FALSE), not null
 #
 # Indexes
 #

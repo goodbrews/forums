@@ -27,6 +27,25 @@
     <div class='value'>{{avatar content imageSize="large"}}</div>
   </div>
 
+  <div class='display-row'>
+    <div class='field'>{{i18n user.title.title}}</div>
+    <div class='value'>
+      {{#if editingTitle}}
+        {{textField value=title autofocus="autofocus"}}
+      {{else}}
+        <span {{action toggleTitleEdit}}>{{title}}&nbsp;</span>
+      {{/if}}
+    </div>
+    <div class='controls'>
+      {{#if editingTitle}}
+        <button class='btn' {{action saveTitle}}>{{i18n admin.user.save_title}}</button>
+        <a href="#" {{action toggleTitleEdit}}>Cancel</a>
+      {{else}}
+        <button class='btn' {{action toggleTitleEdit}}>{{i18n admin.user.edit_title}}</button>
+      {{/if}}
+    </div>
+  </div>
+
   <div class='display-row' style='height: 50px'>
     <div class='field'>{{i18n user.ip_address.title}}</div>
     <div class='value'>{{ip_address}}</div>
@@ -59,11 +78,15 @@
 
     </div>
     <div class='controls'>
-      {{#if can_approve}}
-        <button class='btn' {{action approve target="content"}}>
-          <i class='icon icon-ok'></i>
-          {{i18n admin.user.approve}}
-        </button>
+      {{#if approved}}
+        {{i18n admin.user.approve_success}}
+      {{else}}
+        {{#if can_approve}}
+          <button class='btn' {{action approve target="content"}}>
+            <i class='icon icon-ok'></i>
+            {{i18n admin.user.approve}}
+          </button>
+        {{/if}}
       {{/if}}
     </div>
   </div>
@@ -81,6 +104,7 @@
       {{#if active}}
         {{#if can_deactivate}}
           <button class='btn' {{action deactivate target="content"}}>{{i18n admin.user.deactivate_account}}</button>
+          {{i18n admin.user.deactivate_explanation}}
         {{/if}}
       {{else}}
         {{#if can_send_activation_email}}
@@ -159,6 +183,7 @@
         </button>
       {{/if}}
     {{/if}}
+    {{i18n admin.user.banned_explanation}}
     </div>
   </div>
   <div class='display-row'>

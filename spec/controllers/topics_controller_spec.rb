@@ -2,6 +2,43 @@ require 'spec_helper'
 
 describe TopicsController do
 
+
+  context 'wordpress' do
+    let!(:user) { log_in(:moderator) }
+    let(:p1) { Fabricate(:post, user: user) }
+    let(:topic) { p1.topic }
+    let!(:p2) { Fabricate(:post, topic: topic, user:user )}
+
+    it "returns the JSON in the format our wordpress plugin needs" do
+      xhr :get, :wordpress, topic_id: topic.id, best: 3
+      response.should be_success
+      json = ::JSON.parse(response.body)
+      json.should be_present
+
+      # The JSON has the data the wordpress plugin needs
+      json['id'].should == topic.id
+      json['posts_count'].should == 2
+      json['filtered_posts_count'].should == 2
+
+      # Posts
+      json['posts'].size.should == 1
+      post = json['posts'][0]
+      post['id'].should == p2.id
+      post['username'].should == user.username
+      post['avatar_template'].should == user.avatar_template
+      post['name'].should == user.name
+      post['created_at'].should be_present
+      post['cooked'].should == p2.cooked
+
+      # Participants
+      json['participants'].size.should == 1
+      participant = json['participants'][0]
+      participant['id'].should == user.id
+      participant['username'].should == user.username
+      participant['avatar_template'].should == user.avatar_template
+    end
+  end
+
   context 'move_posts' do
     it 'needs you to be logged in' do
       lambda { xhr :post, :move_posts, topic_id: 111, title: 'blah', post_ids: [1,2,3] }.should raise_error(Discourse::NotLoggedIn)
@@ -161,9 +198,40 @@ describe TopicsController do
       -> { xhr :get, :similar_to, title: title, raw: raw }.should raise_error(Discourse::InvalidParameters)
     end
 
-    it "delegates to Topic.similar_to" do
-      Topic.expects(:similar_to).with(title, raw).returns([Fabricate(:topic)])
-      xhr :get, :similar_to, title: title, raw: raw
+    describe "minimum_topics_similar" do
+
+      before do
+        SiteSetting.stubs(:minimum_topics_similar).returns(30)
+      end
+
+      after do
+        xhr :get, :similar_to, title: title, raw: raw
+      end
+
+      describe "With enough topics" do
+        before do
+          Topic.stubs(:count).returns(50)
+        end
+
+        it "deletes to Topic.similar_to if there are more topics than `minimum_topics_similar`" do
+          Topic.expects(:similar_to).with(title, raw, nil).returns([Fabricate(:topic)])
+        end
+
+        describe "with a logged in user" do
+          let(:user) { log_in }
+
+          it "passes a user through if logged in" do
+            Topic.expects(:similar_to).with(title, raw, user).returns([Fabricate(:topic)])
+          end
+        end
+
+      end
+
+      it "does not call Topic.similar_to if there are fewer topics than `minimum_topics_similar`" do
+        Topic.stubs(:count).returns(10)
+        Topic.expects(:similar_to).never
+      end
+
     end
 
   end
@@ -381,6 +449,23 @@ describe TopicsController do
     it 'returns 404 when an invalid slug is given and no id' do
       xhr :get, :show, id: 'nope-nope'
       expect(response.status).to eq(404)
+    end
+
+    it 'returns a 404 when slug and topic id do not match a topic' do
+      xhr :get, :show, topic_id: 123123, slug: 'topic-that-is-made-up'
+      expect(response.status).to eq(404)
+    end
+
+    context 'a topic with nil slug exists' do
+      before do
+        @nil_slug_topic = Fabricate(:topic)
+        Topic.connection.execute("update topics set slug=null where id = #{@nil_slug_topic.id}") # can't find a way to set slug column to null using the model
+      end
+
+      it 'returns a 404 when slug and topic id do not match a topic' do
+        xhr :get, :show, topic_id: 123123, slug: 'topic-that-is-made-up'
+        expect(response.status).to eq(404)
+      end
     end
 
     it 'records a view' do

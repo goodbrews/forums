@@ -22,6 +22,9 @@ Discourse = Ember.Application.createWithMixins({
   // The highest seen post number by topic
   highestSeenByTopic: {},
 
+  // Helps with integration tests
+  URL_FIXTURES: {},
+
   getURL: function(url) {
 
     // If it's a non relative URL, return it.
@@ -39,14 +42,21 @@ Discourse = Ember.Application.createWithMixins({
     even though our path formats are slightly different than what ember prefers.
   */
   resolver: Ember.DefaultResolver.extend({
+
     resolveTemplate: function(parsedName) {
       var resolvedTemplate = this._super(parsedName);
+      if (resolvedTemplate) { return resolvedTemplate; }
+
+      var decamelized = parsedName.fullNameWithoutType.decamelize();
+
+      // See if we can find it with slashes instead of underscores
+      var slashed = decamelized.replace("_", "/");
+      resolvedTemplate = Ember.TEMPLATES[slashed];
       if (resolvedTemplate) { return resolvedTemplate; }
 
       // If we can't find a template, check to see if it's similar to how discourse
       // lays out templates like: adminEmail => admin/templates/email
       if (parsedName.fullNameWithoutType.indexOf('admin') === 0) {
-        var decamelized = parsedName.fullNameWithoutType.decamelize();
         decamelized = decamelized.replace(/^admin\_/, 'admin/templates/');
         decamelized = decamelized.replace(/^admin\./, 'admin/templates/');
         decamelized = decamelized.replace(/\./, '_');
@@ -68,7 +78,7 @@ Discourse = Ember.Application.createWithMixins({
     $('title').text(title);
 
     var notifyCount = this.get('notifyCount');
-    if (notifyCount > 0) {
+    if (notifyCount > 0 && !Discourse.User.current('dynamic_favicon')) {
       title = "(" + notifyCount + ") " + title;
     }
     // chrome bug workaround see: http://stackoverflow.com/questions/2952384/changing-the-window-title-when-focussing-the-window-doesnt-work-in-chrome
@@ -77,6 +87,14 @@ Discourse = Ember.Application.createWithMixins({
       document.title = title;
     }, 200);
   }.observes('title', 'hasFocus', 'notifyCount'),
+
+  faviconChanged: function() {
+    if(Discourse.User.current('dynamic_favicon')) {
+      $.faviconNotify(
+        Discourse.SiteSettings.favicon_url, this.get('notifyCount')
+      );
+    }
+  }.observes('notifyCount'),
 
   // The classes of buttons to show on a post
   postButtons: function() {
@@ -166,6 +184,9 @@ Discourse = Ember.Application.createWithMixins({
       }
     });
 
+    bootbox.animate(false);
+    bootbox.backdrop(true); // clicking outside a bootbox modal closes it
+
     setInterval(function(){
       Discourse.Formatter.updateRelativeAge($('.relative-date'));
     },60 * 1000);
@@ -181,7 +202,7 @@ Discourse = Ember.Application.createWithMixins({
       // Reloading will refresh unbound properties
       Discourse.KeyValueStore.abandonLocal();
       window.location.reload();
-    })
+    });
   },
 
   authenticationComplete: function(options) {
@@ -210,6 +231,7 @@ Discourse = Ember.Application.createWithMixins({
   ajax: function() {
 
     var url, args;
+
     if (arguments.length === 1) {
       if (typeof arguments[0] === "string") {
         url = arguments[0];
@@ -231,12 +253,20 @@ Discourse = Ember.Application.createWithMixins({
       console.warning("DEPRECATION: Discourse.ajax should use promises, received 'error' callback");
     }
 
+    // If we have URL_FIXTURES, load from there instead (testing)
+    var fixture = Discourse.URL_FIXTURES && Discourse.URL_FIXTURES[url];
+    if (fixture) {
+      return Ember.Deferred.promise(function(promise) {
+        promise.resolve(fixture);
+      });
+    }
+
     return Ember.Deferred.promise(function (promise) {
       var oldSuccess = args.success;
       args.success = function(xhr) {
         Ember.run(promise, promise.resolve, xhr);
         if (oldSuccess) oldSuccess(xhr);
-      }
+      };
 
       var oldError = args.error;
       args.error = function(xhr) {
@@ -246,7 +276,7 @@ Discourse = Ember.Application.createWithMixins({
 
         promise.reject(xhr);
         if (oldError) oldError(xhr);
-      }
+      };
 
       // We default to JSON on GET. If we don't, sometimes if the server doesn't return the proper header
       // it will not be parsed as an object.
@@ -279,8 +309,8 @@ Discourse = Ember.Application.createWithMixins({
 
       bus.subscribe("/categories", function(data){
         var site = Discourse.Site.instance();
-        data.categories.each(function(c){
-          site.updateCategory(c)
+        _.each(data.categories,function(c){
+          site.updateCategory(c);
         });
       });
 

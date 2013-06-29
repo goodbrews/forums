@@ -425,14 +425,9 @@ it:
     company_short_name: "Il nome abbreviato di chi gestisce il sito, usato in documenti legali come /tos"
     company_domain: "Il dominio di chi gestisce il sito, usato in documenti legali come /tos"
     api_key: "La chiave API segreta usata per creare e aggiornare topic, usa la sezione /admin/api per impostarla"
-    access_password: "Quando è attivo l'accesso limitato, questa password dev'essere inserita"
     queue_jobs: "Metti in coda diversi job in sidekiq, se false le code sono inline"
     crawl_images: "Abilita la ricezione di immagini da sorgenti terze parti"
     ninja_edit_window: "Numero di secondi trascorsi affinché una modifica del post appena inviato, non venga considerata come nuova revisione"
-    enable_imgur: "Utilizza le api imgur per l'upload, non salvare file in locale"
-    imgur_client_id: "Your imgur.com client ID, required for image upload to function"
-    imgur_client_secret: "Your imgur.com client secret. Not currently required for image upload to function, but may be at some point."
-    imgur_endpoint: "End point per l'upload di immagini su img.ur"
     max_image_width: "Larghezza massima delle immagini in un post"
     category_featured_topics: "Numero di topic mostrati per categoira nella pagina /categories"
     add_rel_nofollow_to_user_content: "Aggiungi l'attributo rel nofollow a tutti i contenuti degli utenti, tranne per i link interni (compresi i domini di livello superiore). Modificare questa opzione comporta l'aggiornamento di tutto il contenuto markdown salvato"
@@ -478,7 +473,7 @@ it:
     posts_per_page: "Quanti post vengono restituiti in una pagina di un topic"
     system_username: "Username dell'autore dei messaggi privati automatizzati spediti dal forum"
     send_welcome_message: "I nuovi utenti ricevono un messaggio di benvenuto?"
-    supress_reply_directly_below: "Non mostrare il numero di risposte ad un post quando c'è una singola risposta appena sotto"
+    suppress_reply_directly_below: "Non mostrare il numero di risposte ad un post quando c'è una singola risposta appena sotto"
     allow_index_in_robots_txt: "Il sito è indicizzabile dai motori di ricerta (aggiorna robots.txt)"
     email_domains_blacklist: Lista di domini separati da pipe (\"|\"). Gli indirizzi email appartenenti a questi domini non saranno autorizzati. Esempio mailinator.com|trashmail.net"
     email_domains_whitelist: "Lista di domini separati da pipe (\"|\"). Gli utenti saranno autorizzati a registrarsi SOLO con questi domini. ATTENZIONE: Utenti con indirizzi email diversi da quelli listati non saranno accettati."
@@ -699,15 +694,7 @@ it:
 
       <small>Dovrebbe esserci la possibilità di cancellare la sottoscrizione in ogni email che mandi, ipotizziamo un possibile footer. Questa email è stata mandata da Nome Azienda, piazza La Bomba e scappa, California, ITALIA 12345. Se non vuoi più ricevere email in futuro, [clicca per cancellarti][5].</small>
 
-  request_access:
-    code: "Codice di accesso"
-    instructions: "Questo sito ha accesso limitato, inserisci il codice di accesso:"
-    enter: "Invia"
-    incorrect: "codice di accesso errato"
-
   system_messages:
-    site_password: "Inoltre, la password del sito è `%{access_password}` se ne hai bisogno."
-
     post_hidden:
       subject_template: "Post nascosto a causa di segnalazioni dalla community"
       text_body_template: |
@@ -764,19 +751,6 @@ it:
         - Per cercare, vedere il tuo profilo e per altri contenuti, clicca le icone in alto a destra.
 
         - Mentre leggi un topic, puoi tornare in cima cliccando il titolo all'inizio della pagina. Per raggiungere il *fondo* invece, clicca la freccia in basso nella progress bar situata in fondo alla pagina, o clicca il campo ultimo post nel sommario presente nel primo post.
-
-    welcome_approved:
-      subject_template: "Il tuo account è stato approvato su %{site_name}!"
-      text_body_template: |
-        Congratulazioni!
-
-        Il tuo account è stato approvato per accedere su %{site_name}, benvenuto nel nostro forum!
-
-        %{new_user_tips}
-
-        Crediamo nel [comportamento civilizzato della community](%{base_url}/faq) in ogni momento.
-
-        Goditi la permanenza!
 
     welcome_user:
       subject_template: "Benvenuto su %{site_name}!"
@@ -944,6 +918,7 @@ it:
   deleted: 'cancellato'
 
   upload:
+    pasted_image_filename: ""
     image:
       fetch_failure: "Spiacente, si è verificato un errore nel recupero dell'immagine."
       unknown_image_type: "Spiacente, ma il file che hai provato a caricare non sembra un'immagine."

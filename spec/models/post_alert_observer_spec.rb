@@ -5,7 +5,6 @@ describe PostAlertObserver do
 
   before do
     ActiveRecord::Base.observers.enable :post_alert_observer
-    ImageSorcery.any_instance.stubs(:convert).returns(false)
   end
 
   let!(:evil_trout) { Fabricate(:evil_trout) }
@@ -105,7 +104,6 @@ describe PostAlertObserver do
         mention_post
       }.should_not change(evil_trout.notifications, :count)
     end
-
   end
 
   context 'moderator action post' do

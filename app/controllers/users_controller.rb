@@ -5,7 +5,6 @@ class UsersController < ApplicationController
 
   skip_before_filter :check_xhr, only: [:show, :password_reset, :update, :activate_account, :avatar, :authorize_email, :user_preferences_redirect]
   skip_before_filter :authorize_mini_profiler, only: [:avatar]
-  skip_before_filter :check_restricted_access, only: [:avatar]
 
   before_filter :ensure_logged_in, only: [:username, :update, :change_email, :user_preferences_redirect]
 
@@ -49,9 +48,10 @@ class UsersController < ApplicationController
       u.digest_after_days = params[:digest_after_days] || u.digest_after_days
       u.auto_track_topics_after_msecs = params[:auto_track_topics_after_msecs].to_i if params[:auto_track_topics_after_msecs]
       u.new_topic_duration_minutes = params[:new_topic_duration_minutes].to_i if params[:new_topic_duration_minutes]
+      u.title = params[:title] || u.title if guardian.can_grant_title?(u)
 
       [:email_digests, :email_direct, :email_private_messages,
-       :external_links_in_new_tab, :enable_quoting].each do |i|
+       :external_links_in_new_tab, :enable_quoting, :dynamic_favicon].each do |i|
         if params[i].present?
           u.send("#{i.to_s}=", params[i] == 'true')
         end
@@ -95,6 +95,9 @@ class UsersController < ApplicationController
 
   def check_username
     params.require(:username)
+
+    # The special case where someone is changing the case of their own username
+    return render(json: {available: true}) if current_user and params[:username].downcase == current_user.username.downcase
 
     validator = UsernameValidator.new(params[:username])
     if !validator.valid_format?
@@ -146,7 +149,7 @@ class UsersController < ApplicationController
   end
 
   def create
-    return fake_success_reponse if suspicious? params
+    return fake_success_response if suspicious? params
 
     user = User.new_from_params(params)
 
@@ -161,35 +164,27 @@ class UsersController < ApplicationController
     end
 
     if user.save
-      msg = nil
-      active_user = user.active?
-
-      if active_user
-        # If the user is active (remote authorized email)
-        if SiteSetting.must_approve_users?
-          msg = I18n.t("login.wait_approval")
-          active_user = false
-        else
-          log_on_user(user)
-          user.enqueue_welcome_message('welcome_user')
-          msg = I18n.t("login.active")
-        end
-      else
-        msg = I18n.t("login.activate_email", email: user.email)
-        Jobs.enqueue(
-          :user_email, type: :signup, user_id: user.id,
+      if SiteSetting.must_approve_users?
+        message = I18n.t("login.wait_approval")
+      elsif !user.active?
+        message = I18n.t("login.activate_email", email: user.email)
+        Jobs.enqueue(:user_email,
+          type: :signup,
+          user_id: user.id,
           email_token: user.email_tokens.first.token
         )
+      else
+        message = I18n.t("login.active")
+        log_on_user(user)
+        user.enqueue_welcome_message('welcome_user')
       end
 
-      # Create 3rd party auth records (Twitter, Facebook, GitHub)
       create_third_party_auth_records(user, auth) if auth.present?
 
       # Clear authentication session.
       session[:authentication] = nil
 
-      # JSON result
-      render json: { success: true, active: active_user, message: msg }
+      render json: { success: true, active: user.active?, message: message }
     else
       render json: {
         success: false,
@@ -314,7 +309,7 @@ class UsersController < ApplicationController
     @user = fetch_user_from_params
     @email_token = @user.email_tokens.unconfirmed.active.first
     if @user
-      @email_token = @user.email_tokens.create(email: @user.email) if @email_token.nil?
+      @email_token ||= @user.email_tokens.create(email: @user.email)
       Jobs.enqueue(:user_email, type: :signup, user_id: @user.id, email_token: @email_token.token)
     end
     render nothing: true
@@ -345,7 +340,7 @@ class UsersController < ApplicationController
       honeypot_or_challenge_fails?(params) || SiteSetting.invite_only?
     end
 
-    def fake_success_reponse
+    def fake_success_response
       render(
         json: {
           success: true,

@@ -60,21 +60,14 @@ Discourse.ComposerController = Discourse.Controller.extend({
 
         buttons = [{
           "label": Em.String.i18n("composer.cancel"),
-          "class": "btn"
+          "class": "cancel",
+          "link": true
         }];
-
-        buttons.push({
-          "label": Em.String.i18n("composer.reply_original"),
-          "class": "btn-primary",
-          "callback": function(){
-            _this.save(true);
-          }
-        });
 
         if(topic) {
           buttons.push({
-            "label": Em.String.i18n("composer.reply_here"),
-            "class": "btn-primary",
+            "label": Em.String.i18n("composer.reply_here") + "<br/><div class='topic-title'>" + topic.get('title') + "</div>",
+            "class": "btn btn-reply-here",
             "callback": function(){
               composer.set('topic', topic);
               composer.set('post', null);
@@ -83,7 +76,15 @@ Discourse.ComposerController = Discourse.Controller.extend({
           });
         }
 
-        bootbox.dialog(message, buttons);
+        buttons.push({
+          "label": Em.String.i18n("composer.reply_original") + "<br/><div class='topic-title'>" + this.get('content.topic.title') + "</div>",
+          "class": "btn-primary btn-reply-on-original",
+          "callback": function(){
+            _this.save(true);
+          }
+        });
+
+        bootbox.dialog(message, buttons, {"classes": "reply-where-modal"});
         return;
       }
     }
@@ -217,9 +218,14 @@ Discourse.ComposerController = Discourse.Controller.extend({
     var view = this.get('view');
     var composerController = this;
     if (!view) {
-      view = Discourse.ComposerView.create({ controller: this });
+
+      // TODO: We should refactor how composer is inserted. It should probably use a
+      // {{render}} and then the controller and view will be wired up automatically.
+      var appView = Discourse.__container__.lookup('view:application');
+      view = appView.createChildView(Discourse.ComposerView, {controller: this});
       view.appendTo($('#main'));
       this.set('view', view);
+
       // the next runloop is too soon, need to get the control rendered and then
       //  we need to change stuff, otherwise css animations don't kick in
       Em.run.next(function() {

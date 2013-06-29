@@ -34,6 +34,16 @@ Discourse.ApplicationRoute = Em.Route.extend({
       });
     },
 
+
+    /**
+      Close the current modal.
+
+      @method closeModal
+    **/
+    closeModal: function() {
+      this.render('hide_modal', {into: 'modal', outlet: 'modalBody'});
+    },
+
     editCategory: function(category) {
       var router = this;
 
@@ -41,7 +51,7 @@ Discourse.ApplicationRoute = Em.Route.extend({
         Discourse.Route.showModal(router, 'editCategory', category);
         router.controllerFor('editCategory').set('selectedTab', 'general');
       } else {
-        Discourse.Category.findBySlugOrId(category.get('slug')).then(function (c) {
+        Discourse.Category.findBySlugOrId(category.get('slug') || category.get('id')).then(function (c) {
           Discourse.Site.instance().updateCategory(c);
           Discourse.Route.showModal(router, 'editCategory', c);
           router.controllerFor('editCategory').set('selectedTab', 'general');

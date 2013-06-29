@@ -94,8 +94,10 @@ describe User do
     let(:user) { Fabricate(:user) }
     let(:admin) { Fabricate(:admin) }
 
-    it "generates a welcome message" do
-      user.expects(:enqueue_welcome_message).with('welcome_approved')
+    it "enqueues a 'signup after approval' email" do
+      Jobs.expects(:enqueue).with(
+        :user_email, has_entries(type: :signup_after_approval)
+      )
       user.approve(admin)
     end
 
@@ -191,6 +193,19 @@ describe User do
       it 'should not change the username_lower' do
         user.reload
         user.username_lower.should == username_lower_before_change
+      end
+    end
+
+    describe 'change the case of my username' do
+      let!(:myself) { Fabricate(:user, username: 'hansolo') }
+
+      it 'should return true' do
+        myself.change_username('HanSolo').should be_true
+      end
+
+      it 'should change the username' do
+        myself.change_username('HanSolo')
+        myself.reload.username.should == 'HanSolo'
       end
     end
 
@@ -582,68 +597,38 @@ describe User do
   end
 
   describe "previous_visit_at" do
+
     let(:user) { Fabricate(:user) }
+    let!(:first_visit_date) { Time.zone.now }
+    let!(:second_visit_date) { 2.hours.from_now }
+    let!(:third_visit_date) { 5.hours.from_now }
 
     before do
       SiteSetting.stubs(:active_user_rate_limit_secs).returns(0)
+      SiteSetting.stubs(:previous_visit_timeout_hours).returns(1)
     end
 
-    it "should be blank on creation" do
+    it "should act correctly" do
       user.previous_visit_at.should be_nil
-    end
 
-    describe "first time" do
-      let!(:first_visit_date) { DateTime.now }
+      # first visit
+      user.update_last_seen!(first_visit_date)
+      user.previous_visit_at.should be_nil
 
-      before do
-        DateTime.stubs(:now).returns(first_visit_date)
-        user.update_last_seen!
-      end
+      # updated same time
+      user.update_last_seen!(first_visit_date)
+      user.reload
+      user.previous_visit_at.should be_nil
 
-      it "should have no value" do
-        user.previous_visit_at.should be_nil
-      end
+      # second visit
+      user.update_last_seen!(second_visit_date)
+      user.reload
+      user.previous_visit_at.should be_within_one_second_of(first_visit_date)
 
-      describe "another call right after" do
-        before do
-          # A different time, to make sure it doesn't change
-          DateTime.stubs(:now).returns(10.minutes.from_now)
-          user.update_last_seen!
-        end
-
-        it "still has no value" do
-          user.previous_visit_at.should be_nil
-        end
-      end
-
-      describe "second visit" do
-        let!(:second_visit_date) { 2.hours.from_now }
-
-        before do
-          DateTime.stubs(:now).returns(second_visit_date)
-          user.update_last_seen!
-        end
-
-        it "should have the previous visit value" do
-          user.previous_visit_at.should == first_visit_date
-        end
-
-        describe "third visit" do
-          let!(:third_visit_date) { 5.hours.from_now }
-
-          before do
-            DateTime.stubs(:now).returns(third_visit_date)
-            user.update_last_seen!
-          end
-
-          it "should have the second visit value" do
-            user.previous_visit_at.should == second_visit_date
-          end
-
-        end
-
-      end
-
+      # third visit
+      user.update_last_seen!(third_visit_date)
+      user.reload
+      user.previous_visit_at.should be_within_one_second_of(second_visit_date)
     end
 
   end
@@ -660,15 +645,19 @@ describe User do
     end
 
     describe 'with no previous values' do
-      let!(:date) { DateTime.now }
+      let!(:date) { Time.zone.now }
 
       before do
-        DateTime.stubs(:now).returns(date)
+        Timecop.freeze(date)
         user.update_last_seen!
       end
 
+      after do
+        Timecop.return
+      end
+
       it "updates last_seen_at" do
-        user.last_seen_at.should == date
+        user.last_seen_at.should be_within_one_second_of(date)
       end
 
       it "should have 0 for days_visited" do
@@ -683,10 +672,14 @@ describe User do
       context "called twice" do
 
         before do
-          DateTime.stubs(:now).returns(date)
+          Timecop.freeze(date)
           user.update_last_seen!
           user.update_last_seen!
           user.reload
+        end
+
+        after do
+          Timecop.return
         end
 
         it "doesn't increase days_visited twice" do
@@ -699,8 +692,12 @@ describe User do
         let!(:future_date) { 3.days.from_now }
 
         before do
-          DateTime.stubs(:now).returns(future_date)
+          Timecop.freeze(future_date)
           user.update_last_seen!
+        end
+
+        after do
+          Timecop.return
         end
 
         it "should log a second visited_at record when we log an update later" do
@@ -845,4 +842,19 @@ describe User do
     end
   end
 
+  describe '#find_by_username_or_email' do
+    it 'works correctly' do
+      bob = Fabricate(:user, username: 'bob', name: 'bobs', email: 'bob@bob.com')
+      bob2 = Fabricate(:user, username: 'bob2', name: 'bobs', email: 'bob2@bob.com')
+
+      expect(User.find_by_username_or_email('bob22@bob.com')).to eq(nil)
+      expect(User.find_by_username_or_email('bobs')).to eq(nil)
+
+      expect(User.find_by_username_or_email('bob2')).to eq(bob2)
+      expect(User.find_by_username_or_email('bob2@BOB.com')).to eq(bob2)
+
+      expect(User.find_by_username_or_email('bob')).to eq(bob)
+      expect(User.find_by_username_or_email('bob@BOB.com')).to eq(bob)
+    end
+  end
 end

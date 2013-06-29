@@ -36,6 +36,12 @@ class Group < ActiveRecord::Base
 
     group.name = I18n.t("groups.default_names.#{name}")
 
+    # don't allow shoddy localization to break this
+    validator = UsernameValidator.new(group.name)
+    unless validator.valid_format?
+      group.name = name
+    end
+
     real_ids = case name
                when :admins
                  "SELECT u.id FROM users u WHERE u.admin"
@@ -70,7 +76,7 @@ class Group < ActiveRecord::Base
 
   def self.refresh_automatic_groups!(*args)
     if args.length == 0
-      args = AUTO_GROUPS.map{|k,v| k}
+      args = AUTO_GROUPS.keys
     end
     args.each do |group|
       refresh_automatic_group!(group)

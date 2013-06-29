@@ -16,7 +16,7 @@ Discourse.ListCategoryRoute = Discourse.FilteredListRoute.extend({
     var uncategorized = Discourse.Category.uncategorizedInstance();
     if (slug === uncategorized.get('slug')) return uncategorized;
 
-    var category = categories.findProperty('slug', Em.get(params, 'slug'))
+    var category = categories.findProperty('slug', Em.get(params, 'slug'));
 
     // In case the slug didn't work, try to find it by id instead.
     if (!category) {
@@ -44,6 +44,7 @@ Discourse.ListCategoryRoute = Discourse.FilteredListRoute.extend({
       listController.set('canCreateTopic', topicList.get('can_create_topic'));
       listController.set('category', category);
       router.controllerFor('listTopics').set('content', topicList);
+      router.controllerFor('listTopics').set('category', category);
     });
   },
 

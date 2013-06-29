@@ -35,20 +35,19 @@ Discourse.SearchController = Em.ArrayController.extend(Discourse.Presence, {
       if (results) {
         searchController.set('noResults', results.length === 0);
 
-        // Make it easy to find the results by type
-        var results_hashed = {};
-        results.forEach(function(r) { results_hashed[r.type] = r });
-
-        // Default order
-        var order = ['topic', 'category', 'user'];
-        results = order.map(function(o) { return results_hashed[o] }).without(void 0);
-
         var index = 0;
-        results.forEach(function(r) {
-          r.results.each(function(item) {
-            item.index = index++;
-          });
-        });
+        results = _(['topic', 'category', 'user'])
+            .map(function(n){
+              return _(results).where({type: n}).first();
+            })
+            .compact()
+            .each(function(list){
+              _.each(list.results, function(item){
+                item.index = index++;
+              });
+            })
+            .value();
+
         searchController.set('count', index);
         searchController.set('content', results);
       }

@@ -348,13 +348,9 @@ sv:
     company_short_name: "Det korta namnet för företaget som driver denna webbplats, används i juridiska dokument så som /tos"
     company_domain: "Domännamnet som ägs av företaget som driver denna webbplats, används i juridiska dokument så som /tos"
     api_key: "Den säkra API-nyckeln som används för att skapa och uppdatera trådar, använd /admin/api för att skapa en"
-    access_password: "När begränsad åtkomst är aktiverad, så måste detta lösenord användas"
     queue_jobs: "Köa diverse jobb i sidekiq, om urkryssat så körs köer infogat"
     crawl_images: "Aktivera hämtning av bilder från tredjepartskällor för att infoga bredd och höjd"
     ninja_edit_window: "Antal sekunder efter ett inlägg när en ändring inte skapar en ny version"
-    enable_imgur: "Aktivera imgur.coms API för uppladdning, sparar inte filer lokalt"
-    imgur_api_key: "Din API-nyckel för imgur.com, krävs för att bilduppladdningen ska funka"
-    imgur_endpoint: "Ändpunkt för uppladdning av bilder till imgur.com"
     max_image_width: "Maxbredd för bilder i ett inlägg"
     category_featured_topics: "Antal visade trådar per kategori på sidan /categories"
     add_rel_nofollow_to_user_content: "Lägg till rel nofollow på allt användargenererat innehåll, förutom interna länkar (inkluderat förälderdomäner) så kräver en ändring av detta att du uppdaterar all bakad markdown"
@@ -399,7 +395,7 @@ sv:
     posts_per_page: "How many posts are returned on a topic page"
     system_username: "Username for the author of automated private messages sent by the forum"
     send_welcome_message: "Do new users get a welcome private message?"
-    supress_reply_directly_below: "Don't show reply count on a post when there is a single reply directly below"
+    suppress_reply_directly_below: "Don't show reply count on a post when there is a single reply directly below"
     allow_index_in_robots_txt: "Site should be indexed by search engines (update robots.txt)"
     email_domains_blacklist: "A pipe-delimited list of email domains that are not allowed. Example: mailinator.com|trashmail.net"
     email_domains_whitelist: "A pipe-delimited list of email domains that users may register with. WARNING: Users with email domains other than those listed will not be allowed."
@@ -627,15 +623,7 @@ sv:
 
       <small>There should be an unsubscribe footer on every email you send, so let's mock one up. This email was sent by Name of Company, 55 Main Street, Anytown, USA 12345. If you would like to opt out of future emails, [click here to unsubscribe][5].</small>
 
-  request_access:
-    code: "Access Code"
-    instructions: "This site has restricted access, enter the access code below:"
-    enter: "Enter"
-    incorrect: "access code was incorrect"
-
   system_messages:
-    site_password: "Also, the site password is `%{access_password}` if you need it."
-
     post_hidden:
       subject_template: "Post hidden due to community flagging"
       text_body_template: |
@@ -693,19 +681,6 @@ sv:
 
         - While reading a topic, move to the top ↑ by clicking its title at the top of the page. To reach the *bottom* ↓, click the down arrow on the topic progress indicator at the bottom of the page, or click the last post field on the topic summary under the first post.
 
-    welcome_approved:
-      subject_template: "You've been approved on %{site_name}!"
-      text_body_template: |
-        Congratulations!
-
-        You're approved to join %{site_name}, welcome to our discussion forum!
-
-        %{new_user_tips}
-
-        We believe in [civilized community behavior](%{base_url}/faq) at all times.
-
-        Enjoy your stay!
-
     welcome_user:
       subject_template: "Welcome to %{site_name}!"
       text_body_template: |
@@ -748,7 +723,7 @@ sv:
       subject_template: "Import completed successfully"
       text_body_template: "The import was successful."
 
-  unsubscribe_link: "If you'd like to unsubscribe from these emails, visit your [user preferences](%{user_preferences_url})."
+  unsubscribe_link: "To unsubscribe from these emails, visit your [user preferences](%{user_preferences_url})."
 
   user_notifications:
     unsubscribe:
@@ -811,7 +786,7 @@ sv:
       subject_template: "[%{site_name}] Forum Activity for %{date}"
       new_activity: "New activity on your topics and posts:"
       new_topics: "New topics:"
-      unsubscribe: "This summary email is sent as a courtesy notification from %{site_link} when we haven't seen you in a while.\nIf you'd like to turn it off or change your email preferences, %{unsubscribe_link}."
+      unsubscribe: "This summary email is sent as a courtesy notification from %{site_link} when we haven't seen you in a while.\nTo turn it off or change your email preferences, %{unsubscribe_link}."
       click_here: "click here"
       from: "%{site_name} digest"
 
@@ -863,3 +838,6 @@ sv:
     see_more: "See More"
     search_title: "Search for this topic"
     search_google: "Search Google"
+
+  upload:
+    pasted_image_filename: ""

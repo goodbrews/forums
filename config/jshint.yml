@@ -10,6 +10,7 @@ paths:
   - app/assets/javascripts/**/*.js
   - spec/javascripts/**/*.js
   - spec/phantom_js/**/*.js
+  - test/javascripts/**/*.js
 
 exclude_paths:
   - app/assets/javascripts/external/*
@@ -75,6 +76,22 @@ predef:
   - I18n
   - bootbox
   - moment
+  - _
+  - module
+  - integration
+  - test
+  - ok
+  - expect
+  - equal
+  - blank
+  - present
+  - visit
+  - count
+  - exists
+  - asyncTest
+  - find
+  - resolvingPromise
+  - sinon
 
 browser:  true      # true if the standard browser globals should be predefined
 rhino:    false     # true if the Rhino environment globals should be predefined

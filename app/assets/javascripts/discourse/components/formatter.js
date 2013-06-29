@@ -1,25 +1,90 @@
+/*jshint onecase:true */
+
 Discourse.Formatter = (function(){
-  var updateRelativeAge, autoUpdatingRelativeAge, relativeAge, relativeAgeTiny, relativeAgeMedium;
+
+  var updateRelativeAge, autoUpdatingRelativeAge, relativeAge, relativeAgeTiny,
+      relativeAgeMedium, relativeAgeMediumSpan, longDate, toTitleCase,
+      shortDate, shortDateNoYear, breakUp;
+
+  breakUp = function(string, maxLength){
+    if(string.length <= maxLength) {
+      return string;
+    }
+
+    var firstPart = string.substr(0, maxLength);
+
+    var betterSplit = firstPart.substr(1).search(/[^a-z]/);
+    if (betterSplit >= 0) {
+      var offset = 1;
+      if(string[betterSplit+1] === "_") {
+        offset = 2;
+      }
+      return string.substr(0, betterSplit + offset) + " " + string.substring(betterSplit + offset);
+    } else {
+      return firstPart + " " + string.substr(maxLength);
+    }
+  };
+
+  shortDate = function(date){
+    return moment(date).shortDate();
+  };
+
+  shortDateNoYear = function(date) {
+    return moment(date).shortDateNoYear();
+  };
+
+  // http://stackoverflow.com/questions/196972/convert-string-to-title-case-with-javascript
+  // TODO: locale support ?
+  toTitleCase = function toTitleCase(str)
+  {
+    return str.replace(/\w\S*/g, function(txt){
+      return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+    });
+  };
+
+  longDate = function(dt) {
+    if (!dt) return;
+
+    return moment(dt).longDate();
+  };
 
   updateRelativeAge = function(elems) {
+    // jQuery .each
     elems.each(function(){
       var $this = $(this);
-      $this.html(relativeAge(new Date($this.data('time')), $this.data('format')));
+      $this.html(relativeAge(new Date($this.data('time')), {format: $this.data('format'), wrapInSpan: false}));
     });
   };
 
   autoUpdatingRelativeAge = function(date,options) {
+
+    if (!date) return "";
+
     options = options || {};
     var format = options.format || "tiny";
 
-    return "<span class='relative-date' data-time='" + date.getTime() + "' data-format='" + format +  "'>" + relativeAge(date, options)  + "</span>";
+    var append = "";
+
+    if(format === 'medium') {
+      append = " date";
+      if(options.leaveAgo) {
+        format = 'medium-with-ago';
+      }
+      options.wrapInSpan = false;
+    }
+
+    if (options.title) {
+      append += "' title='" + longDate(date);
+    }
+
+    return "<span class='relative-date" + append + "' data-time='" + date.getTime() + "' data-format='" + format +  "'>" + relativeAge(date, options)  + "</span>";
   };
 
 
   relativeAgeTiny = function(date, options){
     var format = "tiny";
     var distance = Math.round((new Date() - date) / 1000);
-    var distance_in_minutes = Math.round(distance / 60.0);
+    var distanceInMinutes = Math.round(distance / 60.0);
 
     var formatted;
     var t = function(key,opts){
@@ -28,31 +93,31 @@ Discourse.Formatter = (function(){
 
     switch(true){
 
-    case(distance_in_minutes < 1):
+    case(distanceInMinutes < 1):
       formatted = t("less_than_x_minutes", {count: 1});
       break;
-    case(distance_in_minutes >= 1 && distance_in_minutes <= 44):
-      formatted = t("x_minutes", {count: distance_in_minutes});
+    case(distanceInMinutes >= 1 && distanceInMinutes <= 44):
+      formatted = t("x_minutes", {count: distanceInMinutes});
       break;
-    case(distance_in_minutes >= 45 && distance_in_minutes <= 89):
+    case(distanceInMinutes >= 45 && distanceInMinutes <= 89):
       formatted = t("about_x_hours", {count: 1});
       break;
-    case(distance_in_minutes >= 90 && distance_in_minutes <= 1439):
-      formatted = t("about_x_hours", {count: Math.round(distance_in_minutes / 60.0)});
+    case(distanceInMinutes >= 90 && distanceInMinutes <= 1439):
+      formatted = t("about_x_hours", {count: Math.round(distanceInMinutes / 60.0)});
       break;
-    case(distance_in_minutes >= 1440 && distance_in_minutes <= 2519):
+    case(distanceInMinutes >= 1440 && distanceInMinutes <= 2519):
       formatted = t("x_days", {count: 1});
       break;
-    case(distance_in_minutes >= 2520 && distance_in_minutes <= 129599):
-      formatted = t("x_days", {count: Math.round(distance_in_minutes / 1440.0)});
+    case(distanceInMinutes >= 2520 && distanceInMinutes <= 20160):
+      formatted = t("x_days", {count: Math.round(distanceInMinutes / 1440.0)});
       break;
-    case(distance_in_minutes >= 129600 && distance_in_minutes <= 525599):
-      formatted = t("x_months", {count: Math.round(distance_in_minutes / 43200.0)});
+    case(distanceInMinutes >= 20160 && distanceInMinutes <= 525599):
+      formatted = shortDateNoYear(date);
       break;
     default:
-      var months = Math.round(distance_in_minutes / 43200.0);
-      if (months < 24) {
-        formatted = t("x_months", {count: months});
+      var months = Math.round(distanceInMinutes / 43200.0);
+      if (months < 12) {
+        formatted = shortDateNoYear(date);
       } else {
         formatted = t("over_x_years", {count: Math.round(months / 12.0)});
       }
@@ -62,39 +127,67 @@ Discourse.Formatter = (function(){
     return formatted;
   };
 
+  relativeAgeMediumSpan = function(distance, leaveAgo) {
+    var formatted, distanceInMinutes;
+
+    distanceInMinutes = Math.round(distance / 60.0);
+
+    var t = function(key, opts){
+      return Ember.String.i18n("dates.medium" + (leaveAgo?"_with_ago":"") + "." + key, opts);
+    };
+
+    switch(true){
+    case(distanceInMinutes >= 1 && distanceInMinutes <= 56):
+      formatted = t("x_minutes", {count: distanceInMinutes});
+      break;
+    case(distanceInMinutes >= 56 && distanceInMinutes <= 89):
+      formatted = t("x_hours", {count: 1});
+      break;
+    case(distanceInMinutes >= 90 && distanceInMinutes <= 1379):
+      formatted = t("x_hours", {count: Math.round(distanceInMinutes / 60.0)});
+      break;
+    case(distanceInMinutes >= 1380 && distanceInMinutes <= 2159):
+      formatted = t("x_days", {count: 1});
+      break;
+    case(distanceInMinutes >= 2160):
+      formatted = t("x_days", {count: Math.round((distanceInMinutes - 720.0) / 1440.0)});
+      break;
+    }
+    return formatted || '&mdash';
+  };
+
   relativeAgeMedium = function(date, options){
-    var displayDate, fiveDaysAgo, oneMinuteAgo, fullReadable, humanized, leaveAgo, val;
+    var displayDate, fiveDaysAgo, oneMinuteAgo, fullReadable, leaveAgo, val;
+    var wrapInSpan = options.wrapInSpan === false ? false : true;
 
     leaveAgo = options.leaveAgo;
+    var distance = Math.round((new Date() - date) / 1000);
 
     if (!date) {
       return "&mdash;";
     }
 
-    fullReadable = date.format("long");
+    fullReadable = longDate(date);
     displayDate = "";
-    fiveDaysAgo = (new Date()) - 432000000;
-    oneMinuteAgo = (new Date()) - 60000;
+    fiveDaysAgo = 432000;
+    oneMinuteAgo = 60;
 
-    if (oneMinuteAgo <= date.getTime() && date.getTime() <= (new Date())) {
+    if (distance < oneMinuteAgo) {
       displayDate = Em.String.i18n("now");
-    } else if (fiveDaysAgo > (date.getTime())) {
+    } else if (distance > fiveDaysAgo) {
       if ((new Date()).getFullYear() !== date.getFullYear()) {
-        displayDate = date.format("short");
+        displayDate = shortDate(date);
       } else {
-        displayDate = date.format("short_no_year");
+        displayDate = moment(date).shortDateNoYear();
       }
     } else {
-      humanized = date.relative();
-      if (!humanized) {
-        return "";
-      }
-      displayDate = humanized;
-      if (!leaveAgo) {
-        displayDate = (date.millisecondsAgo()).duration();
-      }
+      displayDate = relativeAgeMediumSpan(distance, leaveAgo);
     }
-    return "<span class='date' title='" + fullReadable + "'>" + displayDate + "</span>";
+    if(wrapInSpan) {
+      return "<span class='date' title='" + fullReadable + "'>" + displayDate + "</span>";
+    } else {
+      return displayDate;
+    }
   };
 
   // mostly lifted from rails with a few amendments
@@ -106,10 +199,20 @@ Discourse.Formatter = (function(){
       return relativeAgeTiny(date, options);
     } else if (format === "medium") {
       return relativeAgeMedium(date, options);
+    } else if (format === 'medium-with-ago') {
+      return relativeAgeMedium(date, _.extend(options, {format: 'medium', leaveAgo: true}));
     }
 
     return "UNKNOWN FORMAT";
   };
 
-  return {relativeAge: relativeAge, autoUpdatingRelativeAge: autoUpdatingRelativeAge, updateRelativeAge: updateRelativeAge};
+  return {
+    longDate: longDate,
+    relativeAge: relativeAge,
+    autoUpdatingRelativeAge: autoUpdatingRelativeAge,
+    updateRelativeAge: updateRelativeAge,
+    toTitleCase: toTitleCase,
+    shortDate: shortDate,
+    breakUp: breakUp
+  };
 })();

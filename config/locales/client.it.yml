@@ -668,7 +668,6 @@ it:
         delete: "elimina post"
         undelete: "annulla eliminazione post"
         share: "condividi questo post"
-        bookmark: "aggiungilo ai tuoi segnalibri"
         more: "Di più"
 
       actions:
@@ -944,7 +943,7 @@ it:
         delete_title: "cancella post (se è il primo post il topic verrà cancellato)"
         flagged_by: "Segnalato da"
         error: "Qualcosa è andato storto"
-        view_message: "view message"
+        view_message: "Reply"
 
       groups:
         title: "Gruppi"

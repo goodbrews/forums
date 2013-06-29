@@ -4,7 +4,18 @@ class StaticController < ApplicationController
 
   def show
 
+    map = {
+      "faq" => "faq_url",
+      "tos" => "tos_url",
+      "privacy" =>  "privacy_policy_url"
+    }
+
     page = params[:id]
+
+    if site_setting_key = map[page]
+      url = SiteSetting.send(site_setting_key)
+      return redirect_to(url) unless url.blank?
+    end
 
     # Don't allow paths like ".." or "/" or anything hacky like that
     page.gsub!(/[^a-z0-9\_\-]/, '')

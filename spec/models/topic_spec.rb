@@ -175,6 +175,26 @@ describe Topic do
         Topic.similar_to("has evil trout made any topics?", "i am wondering has evil trout made any topics?").should == [topic]
       end
 
+      context "secure categories" do
+
+        let(:user) { Fabricate(:user) }
+        let(:category) { Fabricate(:category, secure: true) }
+
+        before do
+          topic.category = category
+          topic.save
+        end
+
+        it "doesn't return topics from private categories" do
+          expect(Topic.similar_to("has evil trout made any topics?", "i am wondering has evil trout made any topics?", user)).to be_blank
+        end
+
+        it "should return the cat since the user can see it" do
+          Guardian.any_instance.expects(:secure_category_ids).returns([category.id])
+          expect(Topic.similar_to("has evil trout made any topics?", "i am wondering has evil trout made any topics?", user)).to include(topic)
+        end
+      end
+
     end
 
   end
@@ -256,6 +276,7 @@ describe Topic do
           new_topic.should be_present
           new_topic.featured_user1_id.should == another_user.id
           new_topic.like_count.should == 1
+
           new_topic.category.should == category
           topic.featured_user1_id.should be_blank
           new_topic.posts.should =~ [p2, p4]
@@ -263,6 +284,7 @@ describe Topic do
           new_topic.reload
           new_topic.posts_count.should == 2
           new_topic.highest_post_number.should == 2
+          expect(new_topic.last_posted_at).to be_present
 
           p2.reload
           p2.sort_order.should == 1
@@ -278,6 +300,7 @@ describe Topic do
           topic.posts_count.should == 2
           topic.posts.should =~ [p1, p3]
           topic.highest_post_number.should == p3.post_number
+
         end
       end
 
@@ -387,9 +410,13 @@ describe Topic do
 
         context 'by username' do
 
-          it 'adds walter to the allowed users' do
+          it 'adds and removes walter to the allowed users' do
             topic.invite(topic.user, walter.username).should be_true
             topic.allowed_users.include?(walter).should be_true
+
+            topic.remove_allowed_user(walter.username).should be_true
+            topic.reload
+            topic.allowed_users.include?(walter).should be_false
           end
 
           it 'creates a notification' do
@@ -1215,6 +1242,21 @@ describe Topic do
       expect{
         closing_topic.set_auto_close(14)
       }.to_not change(closing_topic, :auto_close_started_at)
+    end
+  end
+
+  describe 'secured' do
+    it 'can remove secure groups' do
+      category = Fabricate(:category, secure: true)
+      topic = Fabricate(:topic, category: category)
+
+      Topic.secured(Guardian.new(nil)).count.should == 0
+      Topic.secured(Guardian.new(Fabricate(:admin))).count.should == 2
+
+      # for_digest
+
+      Topic.for_digest(Fabricate(:user), 1.year.ago).count.should == 0
+      Topic.for_digest(Fabricate(:admin), 1.year.ago).count.should == 2
     end
   end
 

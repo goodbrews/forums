@@ -19,7 +19,7 @@ Discourse.FlagController = Discourse.ObjectController.extend(Discourse.ModalFunc
 
     if (selected.get('is_custom_flag')) {
       var len = this.get('message.length') || 0;
-      return len >= Discourse.PostActionType.MIN_MESSAGE_LENGTH &&
+      return len >= Discourse.SiteSettings.min_private_message_post_length &&
              len <= Discourse.PostActionType.MAX_MESSAGE_LENGTH;
     }
     return true;
@@ -43,19 +43,19 @@ Discourse.FlagController = Discourse.ObjectController.extend(Discourse.ModalFunc
   }.property('selected.is_custom_flag'),
 
   takeAction: function() {
-    this.createFlag({takeAction: true})
+    this.createFlag({takeAction: true});
     this.set('hidden', true);
   },
 
   createFlag: function(opts) {
     var flagController = this;
     var postAction = this.get('actionByName.' + this.get('selected.name_key'));
-    var params = this.get('selected.is_custom_flag') ? {message: this.get('message')} : {}
+    var params = this.get('selected.is_custom_flag') ? {message: this.get('message')} : {};
 
     if (opts) params = $.extend(params, opts);
 
     postAction.act(params).then(function() {
-      flagController.closeModal();
+      flagController.send('closeModal');
     }, function(errors) {
       flagController.displayErrors(errors);
     });

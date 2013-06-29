@@ -40,6 +40,21 @@ Fabricator(:post_with_s3_image_url, from: :post) do
   "
 end
 
+Fabricator(:post_with_uploads, from: :post) do
+  cooked "
+<img src='/uploads/default/1/1234567890123456.jpg' height='100' width='100'>
+  "
+end
+
+Fabricator(:post_with_oneboxed_image, from: :post) do
+  cooked "
+<div class='onebox-result'>
+<img src='/uploads/default/1/1234567890123456.jpg' height='100' width='100'>
+</div>
+  "
+end
+
+
 Fabricator(:basic_reply, from: :post) do
   user(:coding_horror)
   reply_to_post_number 1
