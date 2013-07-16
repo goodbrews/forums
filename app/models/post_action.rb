@@ -63,9 +63,9 @@ class PostAction < ActiveRecord::Base
       moderator_id == -1 ? PostActionType.auto_action_flag_types.values : PostActionType.flag_types.values
     end
 
-    PostAction.update_all({ deleted_at: Time.zone.now, deleted_by: moderator_id }, { post_id: post.id, post_action_type_id: actions })
+    PostAction.where({ post_id: post.id, post_action_type_id: actions }).update_all({ deleted_at: Time.zone.now, deleted_by_id: moderator_id })
     f = actions.map{|t| ["#{PostActionType.types[t]}_count", 0]}
-    Post.with_deleted.update_all(Hash[*f.flatten], id: post.id)
+    Post.where(id: post.id).with_deleted.update_all(Hash[*f.flatten])
     update_flagged_posts_count
   end
 
@@ -140,13 +140,13 @@ class PostAction < ActiveRecord::Base
                       user_id: user.id,
                       post_action_type_id:
                       post_action_type_id).first
-      action.trash!
+      action.trash!(user)
       action.run_callbacks(:save)
     end
   end
 
   def remove_act!(user)
-    trash!
+    trash!(user)
     run_callbacks(:save)
   end
 
@@ -224,19 +224,19 @@ class PostAction < ActiveRecord::Base
     case post_action_type
     when :vote
       # Voting also changes the sort_order
-      Post.update_all ["vote_count = vote_count + :delta, sort_order = :max - (vote_count + :delta)",
+      Post.where(id: post_id).update_all ["vote_count = vote_count + :delta, sort_order = :max - (vote_count + :delta)",
                         delta: delta,
-                        max: Topic.max_sort_order], id: post_id
+                        max: Topic.max_sort_order]
     when :like
       # `like_score` is weighted higher for staff accounts
-      Post.update_all ["like_count = like_count + :delta, like_score = like_score + :score_delta",
+      Post.where(id: post_id).update_all ["like_count = like_count + :delta, like_score = like_score + :score_delta",
                         delta: delta,
-                        score_delta: user.staff? ? delta * SiteSetting.staff_like_weight : delta], id: post_id
+                        score_delta: user.staff? ? delta * SiteSetting.staff_like_weight : delta]
     else
-      Post.update_all ["#{column} = #{column} + ?", delta], id: post_id
+      Post.where(id: post_id).update_all ["#{column} = #{column} + ?", delta]
     end
 
-    Topic.update_all ["#{column} = #{column} + ?", delta], id: post.topic_id
+    Topic.where(id: post.topic_id).update_all ["#{column} = #{column} + ?", delta]
 
 
     if PostActionType.notify_flag_type_ids.include?(post_action_type_id)
@@ -271,10 +271,9 @@ class PostAction < ActiveRecord::Base
       reason = guess_hide_reason(old_flags)
     end
 
-    Post.update_all(["hidden = true, hidden_reason_id = COALESCE(hidden_reason_id, ?)", reason], id: post.id)
-    Topic.update_all({ visible: false },
-                     ["id = :topic_id AND NOT EXISTS(SELECT 1 FROM POSTS WHERE topic_id = :topic_id AND NOT hidden)",
-                      topic_id: post.topic_id])
+    Post.where(id: post.id).update_all(["hidden = true, hidden_reason_id = COALESCE(hidden_reason_id, ?)", reason])
+    Topic.where(["id = :topic_id AND NOT EXISTS(SELECT 1 FROM POSTS WHERE topic_id = :topic_id AND NOT hidden)",
+                      topic_id: post.topic_id]).update_all({ visible: false })
 
     # inform user
     if post.user
@@ -345,7 +344,7 @@ class PostAction < ActiveRecord::Base
     end
 
     # TODO add serializer so we can skip this
-    posts.map!(&:to_h)
+    posts.map!(&:marshal_dump)
     [posts, User.select([:id, :username, :email]).where(id: users.to_a).all]
   end
 
@@ -391,7 +390,7 @@ end
 #  deleted_at          :datetime
 #  created_at          :datetime         not null
 #  updated_at          :datetime         not null
-#  deleted_by          :integer
+#  deleted_by_id       :integer
 #  message             :text
 #  related_post_id     :integer
 #  staff_took_action   :boolean          default(FALSE), not null

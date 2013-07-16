@@ -64,6 +64,7 @@ class User < ActiveRecord::Base
   attr_accessor :notification_channel_position
 
   scope :blocked, -> { where(blocked: true) } # no index
+  scope :banned, -> { where('banned_till IS NOT NULL AND banned_till > ?', Time.zone.now) } # no index
 
   module NewTopicDuration
     ALWAYS = -1
@@ -93,26 +94,16 @@ class User < ActiveRecord::Base
   def self.create_for_email(email, opts={})
     username = UserNameSuggester.suggest(email)
 
-    if SiteSetting.call_discourse_hub?
-      begin
-        match, available, suggestion = DiscourseHub.nickname_match?(username, email)
-        username = suggestion unless match || available
-      rescue => e
-        Rails.logger.error e.message + "\n" + e.backtrace.join("\n")
-      end
+    discourse_hub_nickname_operation do
+      match, available, suggestion = DiscourseHub.nickname_match?(username, email)
+      username = suggestion unless match || available
     end
 
     user = User.new(email: email, username: username, name: username)
     user.trust_level = opts[:trust_level] if opts[:trust_level].present?
     user.save!
 
-    if SiteSetting.call_discourse_hub?
-      begin
-        DiscourseHub.register_nickname(username, email)
-      rescue => e
-        Rails.logger.error e.message + "\n" + e.backtrace.join("\n")
-      end
-    end
+    discourse_hub_nickname_operation { DiscourseHub.register_nickname(username, email) }
 
     user
   end
@@ -162,14 +153,8 @@ class User < ActiveRecord::Base
     current_username = self.username
     self.username = new_username
 
-    if current_username.downcase != new_username.downcase && SiteSetting.call_discourse_hub? && valid?
-      begin
-        DiscourseHub.change_nickname(current_username, new_username)
-      rescue DiscourseHub::NicknameUnavailable
-        false
-      rescue => e
-        Rails.logger.error e.message + "\n" + e.backtrace.join("\n")
-      end
+    if current_username.downcase != new_username.downcase && valid?
+      User.discourse_hub_nickname_operation { DiscourseHub.change_nickname(current_username, new_username) }
     end
 
     save
@@ -197,7 +182,13 @@ class User < ActiveRecord::Base
   # Approve this user
   def approve(approved_by, send_mail=true)
     self.approved = true
-    self.approved_by = approved_by
+
+    if Fixnum === approved_by
+      self.approved_by_id = approved_by
+    else
+      self.approved_by = approved_by
+    end
+
     self.approved_at = Time.now
 
     send_approval_email if save and send_mail
@@ -230,8 +221,7 @@ class User < ActiveRecord::Base
   end
 
   def saw_notification_id(notification_id)
-    User.update_all ["seen_notification_id = ?", notification_id],
-                    ["seen_notification_id < ?", notification_id]
+    User.where(["seen_notification_id < ?", notification_id]).update_all ["seen_notification_id = ?", notification_id]
   end
 
   def publish_notifications_state
@@ -416,10 +406,7 @@ class User < ActiveRecord::Base
   end
 
   def username_format_validator
-    validator = UsernameValidator.new(username)
-    unless validator.valid_format?
-      validator.errors.each { |e| errors.add(:username, e) }
-    end
+    UsernameValidator.perform_validation(self, 'username')
   end
 
   def email_confirmed?
@@ -461,7 +448,7 @@ class User < ActiveRecord::Base
     if last_seen.present?
       diff = (Time.now.to_f - last_seen.to_f).round
       if diff > 0 && diff < MAX_TIME_READ_DIFF
-        User.update_all ["time_read = time_read + ?", diff], id: id, time_read: time_read
+        User.where(id: id, time_read: time_read).update_all ["time_read = time_read + ?", diff]
       end
     end
     $redis.set(last_seen_key, Time.now.to_f)
@@ -499,8 +486,12 @@ class User < ActiveRecord::Base
   end
 
   def secure_category_ids
-    cats = self.staff? ? Category.select(:id).where(secure: true) : secure_categories.select('categories.id')
+    cats = self.staff? ? Category.select(:id).where(read_restricted: true) : secure_categories.select('categories.id')
     cats.map { |c| c.id }.sort
+  end
+
+  def topic_create_allowed_category_ids
+    Category.topic_create_allowed(self.id).select(:id)
   end
 
   # Flag all posts from a user as spam
@@ -531,10 +522,10 @@ class User < ActiveRecord::Base
 
     where_conditions = {notifications_reason_id: nil, user_id: id}
     if auto_track_topics_after_msecs < 0
-      TopicUser.update_all({notification_level: TopicUser.notification_levels[:regular]}, where_conditions)
+      TopicUser.where(where_conditions).update_all({notification_level: TopicUser.notification_levels[:regular]})
     else
-      TopicUser.update_all(["notification_level = CASE WHEN total_msecs_viewed < ? THEN ? ELSE ? END",
-                            auto_track_topics_after_msecs, TopicUser.notification_levels[:regular], TopicUser.notification_levels[:tracking]], where_conditions)
+      TopicUser.where(where_conditions).update_all(["notification_level = CASE WHEN total_msecs_viewed < ? THEN ? ELSE ? END",
+                            auto_track_topics_after_msecs, TopicUser.notification_levels[:regular], TopicUser.notification_levels[:tracking]])
     end
   end
 
@@ -605,6 +596,20 @@ class User < ActiveRecord::Base
         email_token: email_tokens.first.token
       )
     end
+
+  private
+
+  def self.discourse_hub_nickname_operation
+    if SiteSetting.call_discourse_hub?
+      begin
+        yield
+      rescue DiscourseHub::NicknameUnavailable
+        false
+      rescue => e
+        Rails.logger.error e.message + "\n" + e.backtrace.join("\n")
+      end
+    end
+  end
 end
 
 # == Schema Information
@@ -659,6 +664,7 @@ end
 #  topic_reply_count             :integer          default(0), not null
 #  blocked                       :boolean          default(FALSE)
 #  dynamic_favicon               :boolean          default(FALSE), not null
+#  title                         :string(255)
 #
 # Indexes
 #

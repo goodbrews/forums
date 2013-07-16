@@ -28,6 +28,8 @@ config/initializers/secret_token.rb
 config/database.yml
 config/newrelic.yml
 config/redis.yml
+config/discourse.pill
+config/environments/production.rb
 
 # Ignore the default SQLite database and db dumps
 /db/*.sqlite3

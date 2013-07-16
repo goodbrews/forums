@@ -11,7 +11,7 @@
 // Externals we need to load first
 //= require ../../app/assets/javascripts/external/jquery-1.9.1.js
 //= require ../../app/assets/javascripts/external/jquery.ui.widget.js
-//= require ../../app/assets/javascripts/external/handlebars-1.0.rc.4.js
+//= require ../../app/assets/javascripts/external/handlebars.js
 //= require ../../app/assets/javascripts/external_development/ember.js
 //= require ../../app/assets/javascripts/external_development/group-helper.js
 
@@ -70,9 +70,16 @@ d.write('<style>#ember-testing-container { position: absolute; background: white
 Discourse.rootElement = '#ember-testing';
 Discourse.setupForTesting();
 Discourse.injectTestHelpers();
-
+Discourse.bindDOMEvents();
 
 Discourse.Router.map(function() {
   return Discourse.routeBuilder.call(this);
 });
+
+
+QUnit.testStart(function() {
+  // Allow our tests to change site settings and have them reset before the next test
+  Discourse.SiteSettings = jQuery.extend(true, {}, Discourse.SiteSettingsOriginal);
+  Discourse.BaseUri = "/";
+})
 

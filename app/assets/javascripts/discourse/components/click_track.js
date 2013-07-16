@@ -85,7 +85,7 @@ Discourse.ClickTrack = {
     }
 
     // If we're on the same site, use the router and track via AJAX
-    if (href.indexOf(Discourse.URL.origin()) === 0) {
+    if ((href.indexOf(Discourse.URL.origin()) === 0) && !href.match(/\/uploads\//i)) {
       Discourse.ajax("/clicks/track", {
         data: {
           url: href,
@@ -109,5 +109,3 @@ Discourse.ClickTrack = {
     return false;
   }
 };
-
-

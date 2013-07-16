@@ -116,13 +116,13 @@ class PostCreator
   protected
 
   def secure_group_ids(topic)
-    @secure_group_ids ||= if topic.category && topic.category.secure?
+    @secure_group_ids ||= if topic.category && topic.category.read_restricted?
       topic.category.secure_group_ids
     end
   end
 
   def after_post_create
-    if @post.post_number > 1
+    if !@topic.private_message? && @post.post_number > 1 && @post.post_type != Post.types[:moderator_action]
       TopicTrackingState.publish_unread(@post)
     end
   end
@@ -132,7 +132,7 @@ class PostCreator
     # Don't publish invisible topics
     return unless @topic.visible?
 
-    return if @topic.private_message?
+    return if @topic.private_message? || @post.post_type == Post.types[:moderator_action]
 
     @topic.posters = @topic.posters_summary
     @topic.posts_count = 1
@@ -185,8 +185,8 @@ class PostCreator
 
   def setup_post
     post = @topic.posts.new(raw: @opts[:raw],
-                           user: @user,
-                           reply_to_post_number: @opts[:reply_to_post_number])
+                            user: @user,
+                            reply_to_post_number: @opts[:reply_to_post_number])
 
     # Attributes we pass through to the post instance if present
     [:post_type, :no_bump, :cooking_options, :image_sizes, :acting_user, :invalidate_oneboxes].each do |a|
@@ -208,7 +208,7 @@ class PostCreator
   end
 
   def save_post
-    unless @post.save
+    unless @post.save(validate: !@opts[:skip_validations])
       @errors = @post.errors
       raise ActiveRecord::Rollback.new
     end

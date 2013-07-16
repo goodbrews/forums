@@ -7,7 +7,7 @@
       <br/>
       {{#if can_send_private_message_to_user}}
         <button class='btn create' {{action composePrivateMessage}}>
-          <i class='icon icon-envelope-alt'></i>
+          <i class='icon icon-envelope'></i>
           {{i18n user.private_message}}
         </button>
       {{/if}}
@@ -22,7 +22,7 @@
     </ul>
     <div class='show'>
       <dl>
-      {{#if hasWebsite}}
+      {{#if websiteName}}
         <dt>{{i18n user.website}}:</dt><dd><a {{bindAttr href="website"}} target="_blank">{{websiteName}}</a></dd>
       {{/if}}
       {{#if created_at}}
@@ -35,7 +35,7 @@
         <dt>{{i18n user.last_seen}}:</dt><dd>{{date last_seen_at}}</dd>
       {{/if}}
       {{#if invited_by}}
-        <dt>{{i18n user.invited_by}}:</dt><dd>{{#linkTo user.activity invited_by}}{{invited_by.username}}{{/linkTo}}</dd>
+        <dt>{{i18n user.invited_by}}:</dt><dd>{{#linkTo 'user.activity' invited_by}}{{invited_by.username}}{{/linkTo}}</dd>
       {{/if}}
       {{#if email}}
         <dt>{{i18n user.email.title}}:</dt><dd {{bindAttr title="email"}}>{{email}}</dd>

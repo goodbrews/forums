@@ -8,7 +8,7 @@ var qHint = function(name, sourceFile, options, globals) {
         sourceFile = name;
     }
 
-    return asyncTest(name, function() {
+    return asyncTestDiscourse(name, function() {
         qHint.sendRequest(sourceFile, function(req) {
             start();
 
@@ -113,15 +113,19 @@ var jsHintOpts = {
     "visit",
     "count",
     "exists",
-    "asyncTest",
+    "asyncTestDiscourse",
     "find",
-    "resolvingPromise",
     "sinon",
     "moment",
     "start",
     "_",
     "console",
-    "alert"],
+    "alert",
+    "controllerFor",
+    "containsInstance",
+    "deepEqual",
+    "Blob",
+    "File"],
   "node" : false,
   "browser" : true,
   "boss" : true,

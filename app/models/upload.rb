@@ -1,9 +1,9 @@
 require 'digest/sha1'
 require 'image_sizer'
-require 's3'
-require 'local_store'
 require 'tempfile'
 require 'pathname'
+require_dependency 's3'
+require_dependency 'local_store'
 
 class Upload < ActiveRecord::Base
   belongs_to :user
@@ -17,7 +17,7 @@ class Upload < ActiveRecord::Base
   validates_presence_of :original_filename
 
   def thumbnail
-    @thumbnail ||= optimized_images.where(width: width, height: height).first
+    optimized_images.where(width: width, height: height).first
   end
 
   def thumbnail_url
@@ -31,7 +31,6 @@ class Upload < ActiveRecord::Base
   def create_thumbnail!
     return unless SiteSetting.create_thumbnails?
     return if SiteSetting.enable_s3_uploads?
-    return unless width > SiteSetting.auto_link_images_wider_than
     return if has_thumbnail?
     thumbnail = OptimizedImage.create_for(self, width, height)
     optimized_images << thumbnail if thumbnail
@@ -48,28 +47,28 @@ class Upload < ActiveRecord::Base
     # compute the sha
     sha1 = Digest::SHA1.file(file.tempfile).hexdigest
     # check if the file has already been uploaded
-    upload = Upload.where(sha1: sha1).first
-
-    # otherwise, create it
-    if upload.blank?
-      # retrieve image info
-      image_info = FastImage.new(file.tempfile, raise_on_failure: true)
-      # compute image aspect ratio
-      width, height = ImageSizer.resize(*image_info.size)
+    unless upload = Upload.where(sha1: sha1).first
+      # deal with width & heights for images
+      if SiteSetting.authorized_image?(file)
+        # retrieve image info
+        image_info = FastImage.new(file.tempfile, raise_on_failure: true)
+        # compute image aspect ratio
+        width, height = ImageSizer.resize(*image_info.size)
+        # make sure we're at the beginning of the file (FastImage is moving the pointer)
+        file.rewind
+      end
       # create a db record (so we can use the id)
       upload = Upload.create!({
         user_id: user_id,
         original_filename: file.original_filename,
         filesize: File.size(file.tempfile),
         sha1: sha1,
+        url: "",
         width: width,
         height: height,
-        url: ""
       })
-      # make sure we're at the beginning of the file (FastImage is moving the pointer)
-      file.rewind
       # store the file and update its url
-    upload.url = Upload.store_file(file, sha1, image_info, upload.id)
+      upload.url = Upload.store_file(file, sha1, upload.id)
       # save the url
       upload.save
     end
@@ -77,14 +76,14 @@ class Upload < ActiveRecord::Base
     upload
   end
 
-  def self.store_file(file, sha1, image_info, upload_id)
-    return S3.store_file(file, sha1, image_info, upload_id) if SiteSetting.enable_s3_uploads?
-    return LocalStore.store_file(file, sha1, image_info, upload_id)
+  def self.store_file(file, sha1, upload_id)
+    return S3.store_file(file, sha1, upload_id) if SiteSetting.enable_s3_uploads?
+    return LocalStore.store_file(file, sha1, upload_id)
   end
 
   def self.remove_file(url)
-    S3.remove_file(url) if SiteSetting.enable_s3_uploads?
-    LocalStore.remove_file(url)
+    return S3.remove_file(url) if SiteSetting.enable_s3_uploads?
+    return LocalStore.remove_file(url)
   end
 
   def self.has_been_uploaded?(url)
@@ -96,19 +95,15 @@ class Upload < ActiveRecord::Base
   end
 
   def self.is_local?(url)
-    url.start_with?(base_url)
+    !SiteSetting.enable_s3_uploads? && url.start_with?(LocalStore.base_url)
   end
 
   def self.is_on_s3?(url)
     SiteSetting.enable_s3_uploads? && url.start_with?(S3.base_url)
   end
 
-  def self.base_url
-    asset_host.present? ? asset_host : Discourse.base_url_no_prefix
-  end
-
-  def self.asset_host
-    ActionController::Base.asset_host
+  def self.get_from_url(url)
+    Upload.where(url: url).first if has_been_uploaded?(url)
   end
 
 end

@@ -26,6 +26,8 @@ class SiteSetting < ActiveRecord::Base
   client_setting(:must_approve_users, false)
   client_setting(:ga_tracking_code, "")
   client_setting(:ga_domain_name, "")
+  client_setting(:enable_escaped_fragments, false)
+  client_setting(:enable_noscript_support, true)
   client_setting(:enable_long_polling, true)
   client_setting(:polling_interval, 3000)
   client_setting(:anon_polling_interval, 30000)
@@ -39,6 +41,7 @@ class SiteSetting < ActiveRecord::Base
   client_setting(:min_search_term_length, 3)
   client_setting(:flush_timings_secs, 5)
   client_setting(:suppress_reply_directly_below, true)
+  client_setting(:suppress_reply_directly_above, true)
   client_setting(:email_domains_blacklist, 'mailinator.com')
   client_setting(:email_domains_whitelist)
   client_setting(:version_checks, true)
@@ -50,7 +53,8 @@ class SiteSetting < ActiveRecord::Base
   # auto-replace rules for title
   setting(:title_prettify, true)
 
-  client_setting(:max_upload_size_kb, 1024)
+  client_setting(:max_upload_size_kb, 2048)
+  client_setting(:authorized_extensions, '.jpg|.jpeg|.png|.gif')
 
   # settings only available server side
   setting(:auto_track_topics_after, 240000)
@@ -74,7 +78,7 @@ class SiteSetting < ActiveRecord::Base
   setting(:create_thumbnails, false)
   client_setting(:category_featured_topics, 6)
   setting(:topics_per_page, 30)
-  setting(:posts_per_page, 20)
+  client_setting(:posts_per_page, 20)
   setting(:invite_expiry_days, 14)
   setting(:active_user_rate_limit_secs, 60)
   setting(:previous_visit_timeout_hours, 1)
@@ -103,7 +107,6 @@ class SiteSetting < ActiveRecord::Base
   setting(:max_flags_per_day, 20)
   setting(:max_edits_per_day, 30)
   setting(:max_favorites_per_day, 20)
-  setting(:auto_link_images_wider_than, 50)
 
   setting(:email_time_window_mins, 10)
 
@@ -127,6 +130,7 @@ class SiteSetting < ActiveRecord::Base
 
   # we need to think of a way to force users to enter certain settings, this is a minimal config thing
   setting(:notification_email, 'info@discourse.org')
+  setting(:email_custom_headers, 'Auto-Submitted: auto-generated')
 
   setting(:allow_index_in_robots_txt, true)
 
@@ -169,6 +173,8 @@ class SiteSetting < ActiveRecord::Base
   setting(:s3_region, '', enum: 'S3RegionSiteSetting')
   setting(:s3_upload_bucket, '')
 
+  setting(:enable_flash_video_onebox, false)
+
   setting(:default_trust_level, 0)
   setting(:default_invitee_trust_level, 1)
 
@@ -204,7 +210,7 @@ class SiteSetting < ActiveRecord::Base
   setting(:max_word_length, 30)
 
   setting(:newuser_max_links, 2)
-  setting(:newuser_max_images, 0)
+  client_setting(:newuser_max_images, 0)
 
   setting(:newuser_spam_host_threshold, 3)
 
@@ -223,6 +229,8 @@ class SiteSetting < ActiveRecord::Base
   client_setting(:topic_views_heat_high,   5000)
 
   setting(:minimum_topics_similar, 50)
+
+  client_setting(:relative_date_duration, 14)
 
   def self.generate_api_key!
     self.api_key = SecureRandom.hex(32)
@@ -264,6 +272,23 @@ class SiteSetting < ActiveRecord::Base
   def self.anonymous_homepage
     list = ['latest', 'hot', 'categories', 'category']
     top_menu_items.map { |item| item.name }.select{ |item| list.include?(item) }.first
+  end
+
+  def self.authorized_file?(file)
+    file.original_filename =~ /\.(#{authorized_extensions.tr(". ", "")})$/i
+  end
+
+  def self.images
+    @images ||= ["jpg", "jpeg", "png", "gif", "tif", "tiff", "bmp"]
+  end
+
+  def self.authorized_image?(file)
+    authorized_images = authorized_extensions
+                          .tr(". ", "")
+                          .split("|")
+                          .select { |extension| images.include?(extension) }
+                          .join("|")
+    file.original_filename =~ /\.(#{authorized_images})$/i
   end
 
 end

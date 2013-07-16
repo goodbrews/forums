@@ -1,9 +1,10 @@
 require_dependency 'user_destroyer'
 require_dependency 'admin_user_index_query'
+require_dependency 'boost_trust_level'
 
 class Admin::UsersController < Admin::AdminController
 
-  before_filter :fetch_user, only: [:ban, :unban, :refresh_browsers, :revoke_admin, :grant_admin, :revoke_moderation, :grant_moderation, :approve, :activate, :deactivate, :block, :unblock]
+  before_filter :fetch_user, only: [:ban, :unban, :refresh_browsers, :revoke_admin, :grant_admin, :revoke_moderation, :grant_moderation, :approve, :activate, :deactivate, :block, :unblock, :trust_level]
 
   def index
     query = ::AdminUserIndexQuery.new(params)
@@ -69,6 +70,13 @@ class Admin::UsersController < Admin::AdminController
     render_serialized(@user, AdminUserSerializer)
   end
 
+  def trust_level
+    guardian.ensure_can_change_trust_level!(@user)
+    logger = AdminLogger.new(current_user)
+    BoostTrustLevel.new(user: @user, level: params[:level], logger: logger).save!
+    render_serialized(@user, AdminUserSerializer)
+  end
+
   def approve
     guardian.ensure_can_approve!(@user)
     @user.approve(current_user)
@@ -96,13 +104,13 @@ class Admin::UsersController < Admin::AdminController
 
   def block
     guardian.ensure_can_block_user! @user
-    SpamRulesEnforcer.punish! @user
+    UserBlocker.block(@user, current_user)
     render nothing: true
   end
 
   def unblock
     guardian.ensure_can_unblock_user! @user
-    SpamRulesEnforcer.clear @user
+    UserBlocker.unblock(@user, current_user)
     render nothing: true
   end
 

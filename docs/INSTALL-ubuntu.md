@@ -1,5 +1,12 @@
 # Discourse Install Guide on Ubuntu
 
+## What kind of hardware do you have?
+
+- We *strongly* recommend 2GB of memory minimum if you don't want to deal with swap partitions during the install.
+- We recommend at least a dual core CPU.
+
+You can get away with less than this if you are careful -- 1 GB of memory and a single core CPU are the minimums -- but it's simpler to just throw a bit more hardware at the problem.
+
 ## Install Ubuntu Server 12.04 LTS with the package groups:
 
 ![screenshot of package group selection screen](https://raw.github.com/discourse/discourse-docimages/master/install/ubuntu%20-%20install%20-%20software%20selection.png)
@@ -320,7 +327,7 @@ and create an account by logging in normally, then run the commands:
     RAILS_ENV=production bundle exec rails c
 
     # (in rails console)
-    > me = User.find_by_username_or_email('myemailaddress@me.com')[0]
+    > me = User.find_by_username_or_email('myemailaddress@me.com')
     > me.activate #use this in case you haven't configured your mail server and therefore can't receive the activation mail.
     > me.admin = true
     > me.save

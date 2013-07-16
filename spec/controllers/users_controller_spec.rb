@@ -216,6 +216,17 @@ describe UsersController do
   describe '.password_reset' do
     let(:user) { Fabricate(:user) }
 
+    context "you can view it even if login is required" do
+      before do
+        SiteSetting.stubs(:login_required).returns(true)
+        get :password_reset, token: 'asdfasdf'
+      end
+
+      it "returns success" do
+        response.should be_success
+      end
+    end
+
     context 'invalid token' do
       before do
         EmailToken.expects(:confirm).with('asdfasdf').returns(nil)
@@ -887,7 +898,7 @@ describe UsersController do
       context 'with a valid email_token' do
         it 'should send the activation email' do
           Jobs.expects(:enqueue).with(:user_email, has_entries(type: :signup))
-          xhr :get, :send_activation_email, username: user.username
+          xhr :post, :send_activation_email, username: user.username
         end
       end
 
@@ -899,13 +910,13 @@ describe UsersController do
 
         it 'should generate a new token' do
           expect {
-            xhr :get, :send_activation_email, username: user.username
+            xhr :post, :send_activation_email, username: user.username
           }.to change{ user.email_tokens(true).count }.by(1)
         end
 
         it 'should send an email' do
           Jobs.expects(:enqueue).with(:user_email, has_entries(type: :signup))
-          xhr :get, :send_activation_email, username: user.username
+          xhr :post, :send_activation_email, username: user.username
         end
       end
     end
@@ -913,7 +924,7 @@ describe UsersController do
     context 'when username does not exist' do
       it 'should not send an email' do
         Jobs.expects(:enqueue).never
-        xhr :get, :send_activation_email, username: 'nopenopenopenope'
+        xhr :post, :send_activation_email, username: 'nopenopenopenope'
       end
     end
   end

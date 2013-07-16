@@ -15,6 +15,8 @@ ru:
   time:
     formats:
       short: '%d.%m.%Y'
+      short_no_year: '%B %-d'
+      date_only: '%b %-d, %Y'
   title: Discourse
   topics: Темы
   posts: сообщения
@@ -54,12 +56,15 @@ ru:
   invalid_characters: содержит недопустимые символы
   is_invalid: слишком короткий
   next_page: следующая страница →
-  by: By
+  by: От
   topics_in_category: "Темы в категории '%{category}'"
   rss_posts_in_topic: "RSS лента темы '%{topic}"
   rss_topics_in_category: "RSS лента тем в категории '%{category}'"
   author_wrote: '%{author} написал:'
   private_message_abbrev: ЛС
+  rss_description:
+    latest: Последние темы
+    hot: Популярные темы
   groups:
     errors:
       can_not_modify_automatic: Вы не можете изменить автоматическую группу.
@@ -152,6 +157,7 @@ ru:
       title: Лидер
     elder:
       title: Опытный пользователь
+    change_failed_explanation: "Вы попытались понизить пользователя %{user_name} до уровня '%{new_trust_level}'. Однако, его уровень доверия уже '%{current_trust_level}'. Пользователь %{user_name} останется в группе '%{current_trust_level}'"
   rate_limiter:
     too_many_requests: 'Вы повторяете действие слишком часто. Пожалуйста, подождите %{time_left} до следующей попытки.'
     hours:
@@ -456,6 +462,9 @@ ru:
     contact_email_invalid: "Контактный емаил сайта недействителен. Пожалуйста, обновите contact_email в разделе <a href='/admin/site_settings'>Настройки сайта</a>."
     title_nag: "Заголовок Настроек сайта до сих пор установлен на значение по умолчанию. Обновите его в соответствии с названием вашего сайта здесь: <a href='/admin/site_settings'>Настройки сайта</a>"
     consumer_email_warning: "Сайт настроен на использование Gmail (или другого почтового сервиса) для отправки сообщений. Gmail <a href='http://support.google.com/a/bin/answer.py?hl=en&answer=166852' target='_blank'>имеет ограничения</a> на количество отправляемых сообщений. Вы можете рассмотреть возможность использования альтернативного поставщика услуг (например, mandrill.com) для обеспечения бесперебойности доставки почтовых сообщений."
+    access_password_removal: "Ваш сайт использовал настройку access_password setting, которая была удалена. Были активированы настройки login_required и must_approve_users settings, которые должны были использоваться. Вы можете изменить их в  <a href='/admin/site_settings'>Site Settings</a>. Не забудьте <a href='/admin/users/list/pending'>подтвердить пользователей в листе ожидания</a>. (Это сообщение исчезнет через 2 суток.)"
+    system_username_warning: "Опция system_username не установлена. Пожалуйста, обновите ее на странице <a href='/admin/site_settings'>Настройки сайта</a>. Установите ее в значение имени пользователя или администратора от имени которого будут отсылаться системные сообщения пользователям."
+    notification_email_warning: "Опция notification_email не установлена. Пожалуйста обновите ее на странице <a href='/admin/site_settings'>Настройки сайта</a>."
   content_types:
     education_new_reply:
       title: 'Обучение нового пользователя: Первые ответы'
@@ -472,12 +481,17 @@ ru:
     welcome_invite:
       title: 'Приветствие: Приглашенный пользователь'
       description: После принятия приглашения от пользователя сайта, новому пользователю будет автоматически послано личное сообщение.
+    privacy_policy:
+      title: Политика конфиденциальности
+      description: Политика конфиденциальности вашего сайта. Оставьте пустым для отображения политики по умолчанию.
+    faq:
+      title: FAQ
+      description: Раздел FAQ вашего сайта. Оставьте пустым для использования раздела по умолчанию.
     login_required_welcome_message:
       title: 'Требуется вход: приветствие'
       description: |
         Приветствие, отображаемое пользователям, не вошедшим на сайт, когда
         опция 'требуется вход' включена.
-
     tos_user_content_license:
       title: 'Условия предоставления услуг: Content License'
       description: Текст раздела Content License «Условий предоставления услуг»
@@ -505,7 +519,7 @@ ru:
     company_short_name: Короткое название компании, которой принадлежит сайт, используется в правовой документации как /tos
     company_domain: Имя домена, принадлежащего компании, заведующей сайтом, используется в правовой документации как /tos
     api_key: Секретный API ключ, используемый для создания и обновления тем. Зайдите в секцию /admin/api , чтобы его задать
-    queue_jobs: Ставить задачи в sidekiq в очередь, если false – очереди inline
+    queue_jobs: ВНИМАНИЕ! ТОЛЬКО ДЛЯ РАЗРАБОТЧИКОВ! Обрабатывать задачи асинхронно в очереди sidekiq, если выключено, задачи обрабатываются синхронно без использования очереди
     crawl_images: Разрешить извлечение изображений из сторонних источников, ширина и высота
     ninja_edit_window: Количество секунд после размещения сообщения, в течение которых внесение правок в сообщение не повлечет его изменение
     max_image_width: Максимальная ширина изображений, добавляемых в сообщение
@@ -521,11 +535,12 @@ ru:
     favicon_url: 'favicon вашего сайта, дополнительная информация: http://en.wikipedia.org/wiki/Favicon'
     apple_touch_icon_url: Иконка используемая для тач-устройств Apple. Рекомендуемый размер 144 x 144 px.
     notification_email: Обратный электронный адрес, используемый для отправки системных электронных писем пользователям, таких как оповещение пользователей о потерянном пароле, новой учетной записи и т.д.
+    email_custom_headers: Разделенный чертой список дополнительных заголовков в почтовых сообщениях
     use_ssl: Будет ли сайт доступен по SSL? (НЕ РЕАЛИЗОВАНО, ЭКСПЕРИМЕНТАЛЬНАЯ ФУНКЦИЯ)
     best_of_score_threshold: Минимальная оценка сообщения, чтобы оно было включено в список «лучших сообщений»
     best_of_posts_required: Минимальное количество сообщений в теме для активации режима «лучшие»
     best_of_likes_required: Минимальное количество симпатий для активации режима «лучшие»
-    best_of_percent_filter: Когда пользователь нажимает «Лучшие», показывать топ % сообщений
+    best_of_percent_filter: 'Когда пользователь нажимает «Лучшие», показывать топ % сообщений'
     enable_private_messages: Разрешить пользователям базового (1) уровня доверия посылать личные сообщения и отвечать на них
     enable_long_polling: Использовать механизм long polling для уведомлений о событиях
     long_polling_interval: Время до того, как начнется новый long poll, в миллисекундах
@@ -535,13 +550,15 @@ ru:
     new_topic_duration_minutes: 'Глобальное количество минут по умолчанию, в течение которых тема оценивается как новая, пользователи могут переназначать (-1 - всегда, -2 – для последнего посещения)'
     flags_required_to_hide_post: 'Количество жалоб, по достижении которого сообщение автоматически скрывается, и личное сообщение об этом посылается автору (0 - никогда)'
     cooldown_minutes_after_hiding_posts: Количество минут, которое пользователь должен подождать, пока сможет отредактировать сообщение, которое было скрыто из-за большого количества жалоб
-    num_flags_to_block_new_user: Если сообщения нового пользователя получат данное количество флагов от (n) различных пользователей, скрыть все сообщения пользователя и отказать пользователю в публикации новых сообщений. 0 отключает функцию.
-    num_users_to_block_new_user: Если сообщения нового пользователя получат (x) флагов от данного количества различных пользователей, скрыть все сообщения пользователя и отказать пользователю в публикации новых сообщений. 0 отключает функцию.
+    num_flags_to_block_new_user: Если сообщения нового пользователя получат данное количество флагов от различных пользователей, скрыть все сообщения пользователя и отказать пользователю в публикации новых сообщений. 0 отключает функцию.
+    num_users_to_block_new_user: Если сообщения нового пользователя получат флаги от данного количества различных пользователей, скрыть все сообщения пользователя и отказать пользователю в публикации новых сообщений. 0 отключает функцию.
     traditional_markdown_linebreaks: Использовать стандартные разрывы строк в Markdown, вместо двух пробелов
     post_undo_action_window_mins: Количество секунд, в течение которых пользователь может отменить действие («Мне нравится», «Жалоба» и т.д.)
     must_approve_users: Администраторы должны одобрять учетные записи всех новых пользователей для того, чтобы они получили доступ
     ga_tracking_code: 'Google analytics tracking code, например: UA-12345678-9; смотрите http://google.com/analytics'
     ga_domain_name: 'Доменное имя для Google analytics, например: mysite.com; смотрите http://google.com/analytics'
+    enable_escaped_fragments: Включить поддержку устаревших поисковых систем (таких как Яндекс) для индексации вашего сайта. ВНИМАНИЕ! Используйте данную опцию только в том случае, если вы знаете зачем она нужна.
+    enable_noscript_support: Включить поддержку тэга  noscipt
     top_menu: 'Определите, как должны располагаться элементы в навигации на главной странице. Пример: latest|hot|read|favorited|unread|new|posted|categories'
     post_menu: 'Определите, какие элементы должны отображаться в меню у сообщения и в какой последовательности.  Пример: like|edit|flag|delete|share|bookmark|reply'
     share_links: 'Определите, какие элементы должны отображаться в меню «Поделиться» и в какой последовательности. Пример: twitter|facebook|google+'
@@ -551,6 +568,7 @@ ru:
     system_username: Никнейм автора автоматических личных сообщений, рассылаемых форумом
     send_welcome_message: Будут ли новые пользователи получать приветственное личное сообщение?
     suppress_reply_directly_below: Не показывать количество ответов на сообщение, если есть всего лишь один ответ непосредственно ниже
+    suppress_reply_directly_above: Не показывать "в ответ на" для сообщений, когда существует ответ непосредственно над текущим
     allow_index_in_robots_txt: Сайт должен индексироваться поисковыми машинами (обновите robots.txt)
     email_domains_blacklist: 'Разделенный чертой список недопустимых почтовых доменов. Пример: mailinator.com|trashmail.net'
     email_domains_whitelist: 'Разделенный чертой список почтовых доменов, которые пользователь может использовать при регистрации. ПРЕДУПРЕЖДЕНИЕ: Пользователи с почтовыми доменами, отличными от указанных, не смогут зарегистрироваться.'
@@ -598,6 +616,7 @@ ru:
     s3_access_key_id: Amazon S3 access key для загрузки и хранения изображений
     s3_secret_access_key: Amazon S3 secret key для загрузки и хранения изображений
     s3_region: Географический регион Amazon S3, который будет использоваться для хранения изображений
+    enable_flash_video_onebox: Включить возможность вставки в сообщения SWF и FLV ссылок как объектов  (может представлять угрозу безопасности, будьте внимательны)
     default_invitee_trust_level: Уровень доверия приглашенных пользователей (0-4) по умолчанию
     default_trust_level: Уровень доверия пользователей (0-4) по умолчанию
     basic_requires_topics_entered: Количество тем, в которых отметился новый пользователь, чтобы получить базовый уровень доверия (1)
@@ -615,7 +634,6 @@ ru:
     newuser_max_mentions_per_post: Максимальное число упоминаний по @name , которое новый пользователь может использовать в сообщении
     max_mentions_per_post: Максимальное число упоминаний по @name , которое новый пользователь может использовать в сообщении
     create_thumbnails: Создать миниатюры для изображений
-    auto_link_images_wider_than: Изображение, шириной более чем указанное значение в пикселях, получит автоматическую ссылку и обработку lightbox
     email_time_window_mins: Сколько минут нужно подождать перед отсылкой письма пользователя, чтобы дать ему шанс сперва его увидеть
     flush_timings_secs: Как часто мы отправляем временные данные на сервер, в секундах
     max_word_length: Максимальная длина слов в названии темы, в символах
@@ -626,11 +644,13 @@ ru:
     min_body_similar_length: Минимальная длина тела сообщения, при которой оно будет проверено на наличие похожих тем
     category_colors: Разделенный чертой (|) список дозволенных hexadecimal цветов для категорий
     max_upload_size_kb: Максимальный размер файлов для загрузки пользователем в кб – убедитесь, что вы настроили лимит также в nginx (client_max_body_size) / apache или proxy.
+    authorized_extensions: Список расширений файлов, разрешенных к загрузке, разделенный вертикальной чертой (|)
     max_similar_results: Количество похожих тем, показываемых пользователю во время создания новой темы
     title_prettify: Предотвращать распространенные опечатки и ошибки, включая КАПС, первый строчный символ, множественные ! и ?, лишние . в конце предложения и т.д.
     topic_views_heat_low: Количество просмотров темы, после которого её уровень популярности становится низким.
     topic_views_heat_medium: Количество просмотров темы, после которого её уровень популярности становится средним.
     topic_views_heat_high: Количество просмотров темы, после которого её уровень популярности становится высоким.
+    faq_url: Укажите полный URL к странице FAQ, если хотите использовать собственную версию.
     tos_url: Если вы хотите использовать документ Условия предоставления услуг, загруженный на другом сервере, то введите ссылку на него.
     privacy_policy_url: Если вы хотите использовать документ Privacy policy, загруженный на другом сервере, то введите ссылку на него.
     newuser_spam_host_threshold: Сколько раз новый пользователь может разместить ссылку на один и тот же хост в сообщениях из `newuser_spam_host_posts`, чтобы это было воспринято как СПАМ?
@@ -643,6 +663,7 @@ ru:
     pop3s_polling_username: Имя пользователя для доступа по протоколу POP3S
     pop3s_polling_password: Пароль пользователя для доступа по протоколу POP3S
     minimum_topics_similar: Количество тем, которое должно присутствовать в базе данных, перед тем, как начнет выводиться подсказка о похожих темах.
+    relative_date_duration: 'Количество дней после отправки, в течении которых даты будут отображаться в относительном виде вместо абсолютного. Например, относительная дата: 7д, абсолютная дата: 20 Фев'
   notification_types:
     mentioned: '%{display_username} упомянул вас в  %{link}'
     liked: '%{display_username} понравилось ваше сообщение в теме %{link}'
@@ -664,11 +685,16 @@ ru:
   most_recent_poster: Последний автор
   frequent_poster: Частый автор
   move_posts:
-    moderator_post:
+    new_topic_moderator_post:
       one: 'Я переместил сообщение в новую тему: %{topic_link}'
       other: 'Я переместил %{count} сообщений в новую тему: %{topic_link}'
-      few: 'Я переместил %{count} сообщений в новую тему: %{topic_link}'
+      few: 'Я переместил %{count} сообщение в новую тему: %{topic_link}'
       many: 'Я переместил %{count} сообщений в новую тему: %{topic_link}'
+    existing_topic_moderator_post:
+      one: 'Я переместил сообщение в тему: %{topic_link}'
+      other: 'Я переместил %{count} сообщений в тему: %{topic_link}'
+      few: 'Я переместил %{count} сообщение в тему: %{topic_link}'
+      many: 'Я переместил %{count} сообщений в тему: %{topic_link}'
   topic_statuses:
     archived_enabled: Эта тема отправлена в Архив. Она заморожена и не может быть изменена.
     archived_disabled: Эта тема разархивирована. Она более не заморожена, и может быть изменена.
@@ -692,6 +718,7 @@ ru:
     active: Ваша учетная запись активна и готова к использованию.
     activate_email: 'Почти готово! Мы послали письмо с инструкциями по активации учетной записи на  <b>%{email}</b>.'
     not_activated: Вы пока что не можете войти на сайт. Пожалуйста, следуйте инструкциям по активации учетной записи, которые мы отправили вам  по электронной почтой.
+    banned: 'Вы не можете войти до %{date}.'
     errors: '%{errors}'
     not_available: 'Недоступно. Попробуйте %{suggestion}?'
     something_already_taken: Что-то пошло не так, возможно, имя пользователя или электронный ящик уже используются. Попробуйте восстановить ваш пароль.
@@ -856,7 +883,7 @@ ru:
       subject_template: Импорт завершен удачно
       text_body_template: Импорт прошел удачно.
     too_many_spam_flags:
-      subject_template: Учетная запись заблокирована
+      subject_template: Новый аккаунт заблокирован
       text_body_template: |
         Здравствуйте!
 
@@ -864,14 +891,23 @@ ru:
 
         Пока модератор не проверит жалобы, вашему аккаунту временно запрещено создавать новые темы или отвечать в существующих.
 
-        За дополнительной информацией обратитесь к разделу часто задаваемых вопросов (%{base_url}/faq).
+        За дополнительной информацией обратитесь к [разделу часто задаваемых вопросов](%{base_url}/faq).
+
+    blocked_by_staff:
+      subject_template: Учетная запись заблокирована
+      text_body_template: |
+        Здравствуйте!
+
+        Это автоматическое сообщение с сайта %{site_name} для информирования вас о том, что ваша учетная запись заблокирована администратором или модератором.
+
+        Получить дополнительную информацию вы можете в нашем разделе [часто задаваемых вопросов](%{base_url}/faq).
 
     user_automatically_blocked:
-      subject_template: 'Пользователь %{username} был автоматически заблокирован'
+      subject_template: 'Новый пользователь %{username} был автоматически заблокирован'
       text_body_template: |
-        Это автоматическое сообщение для информирования о том, что пользователь [%{username}](%{user_url}) автоматически заблокирован по причине большого числа жалоб от пользователей на его сообщения.
+        Это автоматическое сообщение для информирования вас о том, что пользователь [%{username}](%{user_url}) был автоматически заблокирован из за жалоб других пользователей на сообщения %{username}.
 
-        Пожалуйста, [проверьте жалобы](/admin/flags). Если пользователь %{username} не является нарушителем, разблокируйте его нажатием на соответствующую кнопку [на странице администрирования](%{user_url}).
+        Пожалуйста [проверьте жалобы](/admin/flags). Если пользователь %{username} был заблокирован неверно, нажмите кнопку разблокировки [на странице управления пользователем](%{user_url}).
 
     spam_post_blocked:
       subject_template: 'В сообщении пользователя %{username} обнаружен спам'
@@ -892,6 +928,8 @@ ru:
     unsubscribe:
       title: Отписаться
       description: 'Не заинтересованы в получении данных писем? Нет проблем! Нажмите на ссылку ниже, чтобы мгновенно отписаться от рассылки:'
+    reply_by_email: 'Чтобы отреагировать на сообщение, ответьте на данное письмо или перейдите по ссылке %{base_url}%{url} в вашем браузере.'
+    visit_link_to_respond: 'Чтобы отреагировать на сообщение, перейдите по ссылке %{base_url}%{url} в вашем браузере.'
     user_invited_to_private_message:
       subject_template: "[%{site_name}] %{username} пригласил вас на частную беседу '%{topic_title}'"
       text_body_template: |
@@ -900,41 +938,48 @@ ru:
         Пожалуйста, пройдите по ссылке, чтобы увидеть тему: %{base_url}%{url}
 
     user_replied:
-      subject_template: "[%{site_name}] %{username} ответил(а) на ваше сообщение в теме '%{topic_title}'"
+      subject_template: "[%{site_name}] новый ответ на ваше сообщение в теме '%{topic_title}'"
       text_body_template: |
-        %{username} ответил(а) на ваше сообщение в теме '%{topic_title}' на сайте %{site_name}.
+        %{username} ответил на ваше сообщение в теме '%{topic_title}' на сайте %{site_name}:
 
+        ---
         %{message}
 
         ---
-        Пройдите по ссылке, чтобы ответить: %{base_url}%{url}
+        %{respond_instructions}
+
     user_quoted:
       subject_template: "[%{site_name}] %{username} процитировал вас в теме '%{topic_title}'"
       text_body_template: |
         %{username} процитировал вас в теме '%{topic_title}' на сайте %{site_name}:
 
+        ---
         %{message}
 
         ---
-        Перейдите по ссылке, чтобы ответить: %{base_url}%{url}
+        %{respond_instructions}
+
     user_mentioned:
       subject_template: "[%{site_name}] %{username} упомянул вас в теме '%{topic_title}'"
       text_body_template: |
-        %{username} упомянул вас в теме '%{topic_title}' на сайте '%{site_name}':
+        %{username} упомянул вас в теме '%{topic_title}' на сайте %{site_name}:
 
+        ---
         %{message}
 
         ---
-        Пожалуйста, перейдите по ссылке, чтобы ответить: %{base_url}%{url}
+        %{respond_instructions}
 
     user_posted:
-      subject_template: "[%{site_name}] %{username} ответил(а) в теме '%{topic_title}'"
+      subject_template: "[%{site_name}] новое сообщение в теме '%{topic_title}'"
       text_body_template: |
-        %{username} создал новое сообщение в теме '%{topic_title}' на сайте %{site_name}:
+        %{username} ответил в теме  '%{topic_title}' на сайте %{site_name}:
 
+        ---
         %{message}
 
-        Пожалуйста, перейдите по ссылке, чтобы ответить: %{base_url}%{url}
+        ---
+        %{respond_instructions}
 
     digest:
       why: 'Ниже краткое содержание обсуждений на сайте %{site_link} с момента вашего последнего посещения %{last_seen_at}.'
@@ -951,14 +996,13 @@ ru:
     private_message:
       subject_template: '[%{site_name}] %{subject_prefix}%{topic_title}'
       text_body_template: |
-        %{private_message_from} отправил вам личное сообщение
+        Пользователь %{private_message_from} отравил вам личное сообщение
 
         ---
         %{message}
 
         ---
-
-        Пожалуйста, перейдите по ссылке, чтобы ответить: %{base_url}%{url}
+        %{respond_instructions}
 
     forgot_password:
       subject_template: '[%{site_name}] Сброс пароля'
@@ -1008,7 +1052,7 @@ ru:
   discourse_hub:
     access_token_problem: Пожалуйста, обновите установки сайта, чтобы задать верный discourse_org_access_key.
   page_not_found:
-    title: 'Страница, к которой вы обратились, не существует на этом форуме. Надеемся, мы можем помочь вам найти её или другую тему, похожую на неё:'
+    title: Страница, к которой вы обращаетесь, не существует или была удалена модератором.
     popular_topics: Популярные темы
     recent_topics: Свежие темы
     see_more: Больше
@@ -1016,14 +1060,14 @@ ru:
     search_google: Искать в Google
   login_required:
     welcome_message: |
-      Мы рады, что вы участвуете в %{title}. Пожалуйста, создайте учетную запись или войдите.
+      Войдите в свою учетную запись или зарегистрируйтесь на форуме, чтобы просмотреть %{title}.
 
   terms_of_service:
     user_content_license: 'User contributions are licensed under a [Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License](http://creativecommons.org/licenses/by-nc-sa/3.0/deed.en_US). Without limiting any of those representations or warranties, %{company_short_name} has the right (though not the obligation) to, in %{company_short_name}’s sole discretion (i) refuse or remove any content that, in %{company_short_name}’s reasonable opinion, violates any %{company_short_name} policy or is in any way harmful or objectionable, or (ii) terminate or deny access to and use of the Website to any individual or entity for any reason, in %{company_short_name}’s sole discretion. %{company_short_name} will have no obligation to provide a refund of any amounts previously paid.'
     miscellaneous: 'This Agreement constitutes the entire agreement between %{company_short_name} and you concerning the subject matter hereof, and they may only be modified by a written amendment signed by an authorized executive of %{company_short_name}, or by the posting by %{company_short_name} of a revised version. Except to the extent applicable law, if any, provides otherwise, this Agreement, any access to or use of the Website will be governed by the laws of the state of California, U.S.A., excluding its conflict of law provisions, and the proper venue for any disputes arising out of or relating to any of the same will be the state and federal courts located in San Francisco County, California. Except for claims for injunctive or equitable relief or claims regarding intellectual property rights (which may be brought in any competent court without the posting of a bond), any dispute arising under this Agreement shall be finally settled in accordance with the Comprehensive Arbitration Rules of the Judicial Arbitration and Mediation Service, Inc. (“JAMS”) by three arbitrators appointed in accordance with such Rules. The arbitration shall take place in San Francisco, California, in the English language and the arbitral decision may be enforced in any court. The prevailing party in any action or proceeding to enforce this Agreement shall be entitled to costs and attorneys’ fees. If any part of this Agreement is held invalid or unenforceable, that part will be construed to reflect the parties’ original intent, and the remaining portions will remain in full force and effect. A waiver by either party of any term or condition of this Agreement or any breach thereof, in any one instance, will not waive such term or condition or any subsequent breach thereof. You may assign your rights under this Agreement to any party that consents to, and agrees to be bound by, its terms and conditions; %{company_short_name} may assign its rights under this Agreement without condition. This Agreement will be binding upon and will inure to the benefit of the parties, their successors and permitted assigns.'
   deleted: удалено
   upload:
-    pasted_image_filename: ""
+    pasted_image_filename: Имя файла изображения
     image:
       fetch_failure: Извините, во время извлечения изображения произошла ошибка.
       unknown_image_type: Файл, который вы загружаете, не является изображением.

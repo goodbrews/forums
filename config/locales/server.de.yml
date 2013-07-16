@@ -580,8 +580,6 @@ de:
     newuser_max_mentions_per_post: "Maximale Zahl der @Namens-Erwähnungen, die neue Benutzer in Beiträgen nutzen dürfen."
     max_mentions_per_post: "Maximale Zahl der @Namens-Erwähnungen, die man in einem Beitrag nutzen kann."
 
-    auto_link_images_wider_than: "Pixelbreite, ab der Bilder automatisch verlinkt und verkleinert in einer Lightbox dargestellt werden."
-
     email_time_window_mins: "Minuten Wartezeit, bevor eine Mail an Nutzer verschickt wird, um ihnen die Chance zu geben, eine Neuigkeit zuerst zu sehen."
     flush_timings_secs: "Sekunden, nach denen Zeiteinstellungen auf den Server übertragen werden."
     max_word_length: "Maximale Wortlänge in Zeichen in Thementiteln."
@@ -844,9 +842,9 @@ de:
     user_automatically_blocked:
       subject_template: "Benutzer %{username} wurde automatisch gesperrt"
       text_body_template: |
-        Dies ist eine automatische Nachricht um dich zu informieren, dass [%{username}](%{blocked_user_url}) automatisch gesperrt wurde, da zu viele Mitglieder %{username}'s Beiträge beanstanded haben.
+        Dies ist eine automatische Nachricht um dich zu informieren, dass [%{username}](%{user_url}) automatisch gesperrt wurde, da zu viele Mitglieder %{username}'s Beiträge beanstanded haben.
 
-        Bitte [überprüfe die Beanstandungen](/admin/flags). Wenn %{username} nicht mehr gesperrt sein soll, schalte den Benutzer in der [Benuzeradministration](%{blocked_user_url}) wieder frei.
+        Bitte [überprüfe die Beanstandungen](/admin/flags). Wenn %{username} nicht mehr gesperrt sein soll, schalte den Benutzer in der [Benuzeradministration](%{user_url}) wieder frei.
 
     unblocked:
       subject_template: "Benutzerkonto entsperrt"

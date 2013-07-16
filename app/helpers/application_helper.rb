@@ -19,6 +19,14 @@ module ApplicationHelper
     end
   end
 
+  def escape_unicode(javascript)
+    if javascript
+      javascript.gsub(/\342\200\250/u, '&#x2028;').gsub(/(<\/)/u, '\u003C/').html_safe
+    else
+      ''
+    end
+  end
+
   def with_format(format, &block)
     old_formats = formats
     self.formats = [format]
@@ -70,6 +78,10 @@ module ApplicationHelper
       end
     end
 
+    # Add workaround tag for old crawlers which ignores <noscript>
+    # (see https://developers.google.com/webmasters/ajax-crawling/docs/specification)
+    result << tag('meta', name: "fragment", content: "!") if SiteSetting.enable_escaped_fragments
+
     result
   end
 
@@ -77,8 +89,12 @@ module ApplicationHelper
   # will be rendered instead.
   def markdown_content(key, replacements=nil)
     result = PrettyText.cook(SiteContent.content_for(key, replacements || {})).html_safe
-    result = yield if result.blank? && block_given?
-    result
+    if result.blank? && block_given?
+      yield
+      nil
+    else
+      result
+    end
   end
 
   def login_path

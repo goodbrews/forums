@@ -27,6 +27,10 @@ class StaticController < ApplicationController
       file = "static/#{page}.en"
     end
 
+    if not lookup_context.find_all("#{file}.html").any?
+      file = "static/#{page}"
+    end
+
     if lookup_context.find_all("#{file}.html").any?
       render file, layout: !request.xhr?, formats: [:html]
       return
@@ -44,7 +48,7 @@ class StaticController < ApplicationController
 
     redirect_to(
       if params[:redirect].blank? || params[:redirect].match(login_path)
-        root_path
+        "/"
       else
         params[:redirect]
       end

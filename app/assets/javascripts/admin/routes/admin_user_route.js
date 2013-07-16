@@ -23,6 +23,7 @@ Discourse.AdminUserRoute = Discourse.Route.extend(Discourse.ModelReady, {
   modelReady: function(controller, adminUser) {
     adminUser.loadDetails();
     controller.set('model', adminUser);
+    adminUser.setOriginalTrustLevel();
   }
 
 });
