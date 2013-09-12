@@ -31,9 +31,7 @@ describe CookedPostProcessor do
         Upload.expects(:get_from_url).returns(upload)
         cpp.post_process_attachments
         # ensures absolute urls on attachment
-        cpp.html.should =~ /#{LocalStore.base_url}/
-        # ensure name is present
-        cpp.html.should =~ /archive.zip/
+        cpp.html.should =~ /#{Discourse.store.absolute_base_url}/
         # keeps the reverse index up to date
         post.uploads.reload
         post.uploads.count.should == 1
@@ -62,19 +60,19 @@ describe CookedPostProcessor do
 
     end
 
-    context "with uploaded images" do
+    context "with locally uploaded images" do
 
       let(:upload) { Fabricate(:upload) }
-      let(:post) { Fabricate(:post_with_uploaded_images) }
+      let(:post) { Fabricate(:post_with_uploaded_image) }
       let(:cpp) { CookedPostProcessor.new(post) }
-      before { FastImage.stubs(:size) }
+      before { FastImage.stubs(:size).returns([200, 400]) }
 
       # all in one test to speed things up
       it "works" do
-        Upload.expects(:get_from_url).returns(upload).twice
+        Upload.expects(:get_from_url).returns(upload)
         cpp.post_process_images
         # ensures absolute urls on uploaded images
-        cpp.html.should =~ /#{LocalStore.base_url}/
+        cpp.html.should =~ /#{LocalStore.new.absolute_base_url}/
         # dirty
         cpp.should be_dirty
         # keeps the reverse index up to date
@@ -125,6 +123,7 @@ describe CookedPostProcessor do
       let(:cpp) { CookedPostProcessor.new(post) }
 
       before do
+        SiteSetting.stubs(:max_image_height).returns(2000)
         SiteSetting.stubs(:create_thumbnails?).returns(true)
         Upload.expects(:get_from_url).returns(upload)
         cpp.stubs(:associate_to_post)
@@ -137,8 +136,8 @@ describe CookedPostProcessor do
 
       it "generates overlay information" do
         cpp.post_process_images
-        cpp.html.should match_html '<div><a href="http://test.localhost/uploads/default/1/1234567890123456.jpg" class="lightbox"><img src="http://test.localhost/uploads/default/_optimized/da3/9a3/ee5e6b4b0d3_100x200.jpg" width="690" height="1380"><div class="meta">
-<span class="filename">uploaded.jpg</span><span class="informations">1000x2000 | 1.21 KB</span><span class="expand"></span>
+        cpp.html.should match_html '<div><a href="http://test.localhost/uploads/default/1/1234567890123456.jpg" class="lightbox"><img src="http://test.localhost/uploads/default/_optimized/da3/9a3/ee5e6b4b0d_100x200.jpg" width="690" height="1380"><div class="meta">
+<span class="filename">uploaded.jpg</span><span class="informations">1000x2000 1.21 KB</span><span class="expand"></span>
 </div></a></div>'
         cpp.should be_dirty
       end
@@ -148,7 +147,7 @@ describe CookedPostProcessor do
     context "topic image" do
 
       let(:topic) { build(:topic, id: 1) }
-      let(:post) { Fabricate(:post_with_uploaded_images, topic: topic) }
+      let(:post) { Fabricate(:post_with_uploaded_image, topic: topic) }
       let(:cpp) { CookedPostProcessor.new(post) }
 
       it "adds a topic image if there's one in the post" do
@@ -227,7 +226,6 @@ describe CookedPostProcessor do
     let(:cpp) { CookedPostProcessor.new(post) }
 
     it "ensures s3 urls have a default scheme" do
-      Upload.stubs(:is_on_s3?).returns(true)
       FastImage.stubs(:size)
       cpp.expects(:is_valid_image_uri?).with("http://bucket.s3.aws.amazon.com/image.jpg")
       cpp.get_size("//bucket.s3.aws.amazon.com/image.jpg")
@@ -239,13 +237,15 @@ describe CookedPostProcessor do
 
       it "doesn't call FastImage" do
         FastImage.expects(:size).never
-        cpp.get_size("http://foo.bar/image.png").should == nil
+        cpp.get_size("http://foo.bar/image1.png").should == nil
       end
 
-      it "is always allowed to crawled our own images" do
-        Upload.expects(:has_been_uploaded?).returns(true)
+      it "is always allowed to crawl our own images" do
+        store = {}
+        Discourse.expects(:store).returns(store)
+        store.expects(:has_been_uploaded?).returns(true)
         FastImage.expects(:size).returns([100, 200])
-        cpp.get_size("http://foo.bar/image.png").should == [100, 200]
+        cpp.get_size("http://foo.bar/image2.png").should == [100, 200]
       end
 
     end
@@ -253,8 +253,8 @@ describe CookedPostProcessor do
     it "caches the results" do
       SiteSetting.stubs(:crawl_images?).returns(true)
       FastImage.expects(:size).returns([200, 400])
-      cpp.get_size("http://foo.bar/image.png")
-      cpp.get_size("http://foo.bar/image.png").should == [200, 400]
+      cpp.get_size("http://foo.bar/image3.png")
+      cpp.get_size("http://foo.bar/image3.png").should == [200, 400]
     end
 
   end

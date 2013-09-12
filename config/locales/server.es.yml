@@ -76,7 +76,7 @@ es:
               cant_send_pm: "Lo sentimos, no puedes enviar un mensaje privado a este usuario."
 
   user_profile:
-    no_info_me: "<div class='missing-profile'>El campo 'Sobre mí' de tu perfil está actualmente en blanco, <a href='/users/%{username_lower}/preferences'>¿Te gustaría rellenarlo?</a></div>"
+    no_info_me: "<div class='missing-profile'>El campo 'Sobre mí' de tu perfil está actualmente en blanco, <a href='/users/%{username_lower}/preferences/about-me'>¿Te gustaría rellenarlo?</a></div>"
     no_info_other: "<div class='missing-profile'>%{name} no ha introducido nada aún en el campo 'Sobre mí' de su perfil</div>"
 
   category:
@@ -337,7 +337,7 @@ es:
     track_external_right_clicks: "Track external links that are right clicked (eg: open in new tab) disabled by default because it rewrites URLs"
     topics_per_page: "Cuantos topics son cargados por defecto en la página de lista de topics"
     posts_per_page: "Cuantos posts son devueltos en una página de topic"
-    system_username: "Nombre de usuario para el autor de mensajes privados enviados por el foro"
+    site_contact_username: "Nombre de usuario para el autor de mensajes privados enviados por el foro"
     send_welcome_message: "¿Reciben los nuevos usuarios un mensaje privado de bienvenida?"
     suppress_reply_directly_below: "No mostrar el contador de respuestas en un pot cuando una única respuesta directamente debajo"
     allow_index_in_robots_txt: "Permitir que el sitio sea indexado por motores de búsqueda (sobreescribe robots.txt)"
@@ -694,7 +694,7 @@ es:
         Por favor visita este link para contestar: %{base_url}%{url}
 
     user_posted:
-      subject_template: "[%{site_name}] %{username} posteó en '%{topic_title}'"
+      subject_template: "[%{site_name}] %{subject_prefix}%{username} posteó en '%{topic_title}'"
       text_body_template: |
         %{username} posteó en '%{topic_title}' en %{site_name}:
 
@@ -712,17 +712,6 @@ es:
       unsubscribe: "Este email de resumen es enviado como una notificación de cortesía desde %{site_link} ya que no te hemos visto en un tiempo.\nSi te gustaría desactivarlo o cambiar tus preferencias de emeail, %{unsubscribe_link}."
       click_here: "click aquí"
       from: "%{site_name} digest"
-
-    private_message:
-      subject_template: "[%{site_name}] %{subject_prefix}%{topic_title}"
-      text_body_template: |
-        %{private_message_from} te acaba de mandar un mensaje privado
-
-        ---
-        %{message}
-
-        ---
-        Por favor visita este link para contestar: %{base_url}%{url}
 
     forgot_password:
       subject_template: "[%{site_name}] Resetear el password"

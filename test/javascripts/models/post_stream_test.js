@@ -83,6 +83,27 @@ test('updateFromJson', function() {
   equal(postStream.get('extra_property'), 12);
 });
 
+test("removePosts", function() {
+  var postStream = buildStream(10000001, [1,2,3]);
+
+  var p1 = Discourse.Post.create({id: 1, post_number: 2}),
+      p2 = Discourse.Post.create({id: 2, post_number: 3}),
+      p3 = Discourse.Post.create({id: 3, post_number: 4});
+
+  postStream.appendPost(p1);
+  postStream.appendPost(p2);
+  postStream.appendPost(p3);
+
+  // Removing nothing does nothing
+  postStream.removePosts();
+  equal(postStream.get('posts.length'), 3);
+
+  postStream.removePosts([p1, p3]);
+  equal(postStream.get('posts.length'), 1);
+  deepEqual(postStream.get('stream'), [2]);
+
+});
+
 test("cancelFilter", function() {
   var postStream = buildStream(1235);
 
@@ -240,6 +261,22 @@ asyncTestDiscourse("loadIntoIdentityMap with post ids", function() {
   });
 });
 
+asyncTestDiscourse("loading a post's history", function() {
+  var postStream = buildStream(1234);
+  expect(3);
+
+  var post = Discourse.Post.create({id: 4321});
+
+  var secondPost = Discourse.Post.create({id: 2222});
+
+  this.stub(Discourse, "ajax").returns(Ember.RSVP.resolve([secondPost]));
+  postStream.findReplyHistory(post).then(function() {
+    ok(Discourse.ajax.calledOnce, "it made the ajax request");
+    present(postStream.findLoadedPost(2222), "it stores the returned post in the identity map");
+    present(post.get('replyHistory'), "it sets the replyHistory attribute for the post");
+    start();
+  });
+});
 
 test("staging and undoing a new post", function() {
   var postStream = buildStream(10101, [1]);
@@ -293,6 +330,7 @@ test("staging and committing a post", function() {
   // Stage the new post in the stream
   var result = postStream.stagePost(stagedPost, user);
   equal(result, true, "it returns true");
+
   ok(postStream.get('loading'), "it is loading while the post is being staged");
   stagedPost.setProperties({ id: 1234, raw: "different raw value" });
   equal(postStream.get('filteredPostsCount'), 1, "it retains the filteredPostsCount");
@@ -311,7 +349,6 @@ test("staging and committing a post", function() {
   equal(found.get('raw'), 'different raw value', 'it also updated the value in the stream');
 
 });
-
 
 test('triggerNewPostInStream', function() {
   var postStream = buildStream(225566);
@@ -339,5 +376,39 @@ test('triggerNewPostInStream', function() {
   postStream.appendPost(Discourse.Post.create({id: 1, post_number: 2}));
   postStream.triggerNewPostInStream(2);
   ok(postStream.appendMore.calledOnce, "delegates to appendMore because the last post is loaded");
+});
+
+
+test("lastPostLoaded when the id changes", function() {
+  // This can happen in a race condition between staging a post and it coming through on the
+  // message bus. If the id of a post changes we should reconsider the lastPostLoaded property.
+  var postStream = buildStream(10101, [1, 2]);
+  var postWithoutId = Discourse.Post.create({ raw: 'hello world this is my new post' });
+
+  postStream.appendPost(Discourse.Post.create({id: 1, post_number: 1}));
+  postStream.appendPost(postWithoutId);
+  ok(!postStream.get('lastPostLoaded'), 'the last post is not loaded');
+
+  postWithoutId.set('id', 2);
+  ok(postStream.get('lastPostLoaded'), 'the last post is loaded now that the post has an id');
+});
+
+test("comitting and triggerNewPostInStream race condition", function() {
+  var postStream = buildStream(4964);
+
+  postStream.appendPost(Discourse.Post.create({id: 1, post_number: 1}));
+  var user = Discourse.User.create({username: 'eviltrout', name: 'eviltrout', id: 321});
+  var stagedPost = Discourse.Post.create({ raw: 'hello world this is my new post' });
+
+  var result = postStream.stagePost(stagedPost, user);
+  equal(postStream.get('filteredPostsCount'), 0, "it has no filteredPostsCount yet");
+  stagedPost.set('id', 123);
+
+  this.stub(postStream, 'appendMore');
+  postStream.triggerNewPostInStream(123);
+  equal(postStream.get('filteredPostsCount'), 1, "it added the post");
+
+  postStream.commitPost(stagedPost);
+  equal(postStream.get('filteredPostsCount'), 1, "it does not add the same post twice");
 });
 

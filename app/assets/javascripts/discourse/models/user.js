@@ -9,6 +9,16 @@
 Discourse.User = Discourse.Model.extend({
 
   /**
+    The user's stream
+
+    @property stream
+    @type {Discourse.UserStream}
+  **/
+  stream: function() {
+    return Discourse.UserStream.create({ user: this });
+  }.property(),
+
+  /**
     Is this user a member of staff?
 
     @property staff
@@ -16,28 +26,13 @@ Discourse.User = Discourse.Model.extend({
   **/
   staff: Em.computed.or('admin', 'moderator'),
 
-  /**
-    Large version of this user's avatar.
-
-    @property avatarLarge
-    @type {String}
-  **/
-  avatarLarge: function() {
-    return Discourse.Utilities.avatarUrl(this.get('username'), 'large', this.get('avatar_template'));
-  }.property('username'),
-
-  /**
-    Small version of this user's avatar.
-
-    @property avatarSmall
-    @type {String}
-  **/
-  avatarSmall: (function() {
-    return Discourse.Utilities.avatarUrl(this.get('username'), 'small', this.get('avatar_template'));
-  }).property('username'),
 
   searchContext: function() {
-    return ({ type: 'user', id: this.get('username_lower'), user: this });
+    return {
+      type: 'user',
+      id: this.get('username_lower'),
+      user: this
+    };
   }.property('username_lower'),
 
   /**
@@ -99,7 +94,7 @@ Discourse.User = Discourse.Model.extend({
     @type {Integer}
   **/
   trustLevel: function() {
-    return Discourse.Site.instance().get('trustLevels').findProperty('id', parseInt(this.get('trust_level'), 10));
+    return Discourse.Site.currentProp('trustLevels').findProperty('id', parseInt(this.get('trust_level'), 10));
   }.property('trust_level'),
 
   /**
@@ -110,7 +105,7 @@ Discourse.User = Discourse.Model.extend({
     @returns Result of ajax call
   **/
   changeUsername: function(newUsername) {
-    return Discourse.ajax("/users/" + (this.get('username_lower')) + "/preferences/username", {
+    return Discourse.ajax("/users/" + this.get('username_lower') + "/preferences/username", {
       type: 'PUT',
       data: { new_username: newUsername }
     });
@@ -124,7 +119,7 @@ Discourse.User = Discourse.Model.extend({
     @returns Result of ajax call
   **/
   changeEmail: function(email) {
-    return Discourse.ajax("/users/" + (this.get('username_lower')) + "/preferences/email", {
+    return Discourse.ajax("/users/" + this.get('username_lower') + "/preferences/email", {
       type: 'PUT',
       data: { email: email }
     });
@@ -148,7 +143,7 @@ Discourse.User = Discourse.Model.extend({
   **/
   save: function() {
     var user = this;
-    return Discourse.ajax("/users/" + this.get('username').toLowerCase(), {
+    return Discourse.ajax("/users/" + this.get('username_lower'), {
       data: this.getProperties('auto_track_topics_after_msecs',
                                'bio_raw',
                                'website',
@@ -182,9 +177,7 @@ Discourse.User = Discourse.Model.extend({
   changePassword: function() {
     return Discourse.ajax("/session/forgot_password", {
       dataType: 'json',
-      data: {
-        login: this.get('username')
-      },
+      data: { login: this.get('username') },
       type: 'POST'
     });
   },
@@ -249,6 +242,7 @@ Discourse.User = Discourse.Model.extend({
 
   findDetails: function() {
     var user = this;
+
     return PreloadStore.getAndRemove("user_" + user.get('username'), function() {
       return Discourse.ajax("/users/" + user.get('username') + '.json');
     }).then(function (json) {
@@ -264,52 +258,55 @@ Discourse.User = Discourse.Model.extend({
         json.user.invited_by = Discourse.User.create(json.user.invited_by);
       }
 
+
       user.setProperties(json.user);
       return user;
     });
   },
 
-  findStream: function(filter) {
-    if (Discourse.UserAction.statGroups[filter]) {
-      filter = Discourse.UserAction.statGroups[filter].join(",");
-    }
+  /*
+    Change avatar selection
 
-    var stream = Discourse.UserStream.create({
-      itemsLoaded: 0,
-      content: [],
-      filter: filter,
-      user: this
+    @method toggleAvatarSelection
+    @param {Boolean} useUploadedAvatar true if the user is using the uploaded avatar
+    @returns {Promise} the result of the toggle avatar selection
+  */
+  toggleAvatarSelection: function(useUploadedAvatar) {
+    return Discourse.ajax("/users/" + this.get("username_lower") + "/preferences/avatar/toggle", {
+      type: 'PUT',
+      data: { use_uploaded_avatar: useUploadedAvatar }
     });
+  },
 
-    stream.findItems();
-    return stream;
+  /**
+    Determines whether the current user is allowed to upload a file.
+
+    @method isAllowedToUploadAFile
+    @param {string} type The type of the upload (image, attachment)
+    @returns true if the current user is allowed to upload a file
+  **/
+  isAllowedToUploadAFile: function(type) {
+    return this.get('staff') ||
+           this.get('trust_level') > 0 ||
+           Discourse.SiteSettings['newuser_max_' + type + 's'] > 0;
   }
 
 });
 
-Discourse.User.reopenClass({
+Discourse.User.reopenClass(Discourse.Singleton, {
+
 
   /**
-    Returns the currently logged in user
+    The current singleton will retrieve its attributes from the `PreloadStore`
+    if it exists. Otherwise, no instance is created.
 
-    @method current
-    @param {String} optional property to return from the user if the user exists
-    @returns {Discourse.User} the logged in user
+    @method createCurrent
+    @returns {Discourse.User} the user, if logged in.
   **/
-  current: function(property) {
-    if (!this.currentUser) {
-      var userJson = PreloadStore.get('currentUser');
-      if (userJson) {
-        this.currentUser = Discourse.User.create(userJson);
-      }
-    }
-
-    // If we found the current user
-    if (this.currentUser && property) {
-      return this.currentUser.get(property);
-    }
-
-    return this.currentUser;
+  createCurrent: function() {
+    var userJson = PreloadStore.get('currentUser');
+    if (userJson) { return Discourse.User.create(userJson); }
+    return null;
   },
 
   /**
@@ -320,7 +317,7 @@ Discourse.User.reopenClass({
   **/
   logout: function() {
     var discourseUserClass = this;
-    return Discourse.ajax("/session/" + Discourse.User.current('username'), {
+    return Discourse.ajax("/session/" + Discourse.User.currentProp('username'), {
       type: 'DELETE'
     }).then(function () {
       discourseUserClass.currentUser = null;
@@ -335,9 +332,9 @@ Discourse.User.reopenClass({
     @param {String} username A username to check
     @param {String} email An email address to check
   **/
-  checkUsername: function(username, email) {
+  checkUsername: function(username, email, forUserId) {
     return Discourse.ajax('/users/check_username', {
-      data: { username: username, email: email }
+      data: { username: username, email: email, for_user_id: forUserId }
     });
   },
 
@@ -351,7 +348,7 @@ Discourse.User.reopenClass({
   groupStats: function(stats) {
     var responses = Discourse.UserActionStat.create({
       count: 0,
-      action_type: Discourse.UserAction.RESPONSE
+      action_type: Discourse.UserAction.TYPES.replies
     });
 
     stats.filterProperty('isResponse').forEach(function (stat) {
@@ -361,13 +358,15 @@ Discourse.User.reopenClass({
     var result = Em.A();
     result.pushObjects(stats.rejectProperty('isResponse'));
 
-    var insertAt = 1;
+    var insertAt = 0;
     result.forEach(function(item, index){
-     if(item.action_type === Discourse.UserAction.NEW_TOPIC || item.action_type === Discourse.UserAction.POST){
+     if(item.action_type === Discourse.UserAction.TYPES.topics || item.action_type === Discourse.UserAction.TYPES.posts){
        insertAt = index + 1;
      }
     });
-    result.insertAt(insertAt, responses);
+    if(responses.count > 0) {
+      result.insertAt(insertAt, responses);
+    }
     return(result);
   },
 

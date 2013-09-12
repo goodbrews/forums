@@ -3,7 +3,6 @@ require_dependency 'promotion'
 
 class TopicsController < ApplicationController
 
-  # Avatar is an image request, not XHR
   before_filter :ensure_logged_in, only: [:timings,
                                           :destroy_timings,
                                           :update,
@@ -22,11 +21,9 @@ class TopicsController < ApplicationController
 
   before_filter :consider_user_for_promotion, only: :show
 
-  skip_before_filter :check_xhr, only: [:avatar, :show, :feed]
-  caches_action :avatar, cache_path: Proc.new {|c| "#{c.params[:post_number]}-#{c.params[:topic_id]}" }
+  skip_before_filter :check_xhr, only: [:show, :feed]
 
   def show
-
     # We'd like to migrate the wordpress feed to another url. This keeps up backwards compatibility with
     # existing installs.
     return wordpress if params[:best].present?
@@ -35,7 +32,6 @@ class TopicsController < ApplicationController
     begin
       @topic_view = TopicView.new(params[:id] || params[:topic_id], current_user, opts)
     rescue Discourse::NotFound
-      Rails.logger.info ">>>> B"
       topic = Topic.where(slug: params[:id]).first if params[:id]
       raise Discourse::NotFound unless topic
       return redirect_to(topic.relative_url)
@@ -127,7 +123,7 @@ class TopicsController < ApplicationController
 
     # Only suggest similar topics if the site has a minimmum amount of topics present.
     if Topic.count > SiteSetting.minimum_topics_similar
-      topics = Topic.similar_to(title, raw, current_user)
+      topics = Topic.similar_to(title, raw, current_user).to_a
     end
 
     render_serialized(topics, BasicTopicSerializer)
@@ -246,7 +242,7 @@ class TopicsController < ApplicationController
     topic = Topic.where(id: params[:topic_id]).first
     guardian.ensure_can_move_posts!(topic)
 
-    dest_topic = move_post_to_destination(topic)
+    dest_topic = move_posts_to_destination(topic)
     render_topic_changes(dest_topic)
   end
 
@@ -333,14 +329,12 @@ class TopicsController < ApplicationController
     end
   end
 
-  private
-
-  def move_post_to_destination(topic)
+  def move_posts_to_destination(topic)
     args = {}
     args[:title] = params[:title] if params[:title].present?
     args[:destination_topic_id] = params[:destination_topic_id].to_i if params[:destination_topic_id].present?
 
-    topic.move_posts(current_user, params[:post_ids].map {|p| p.to_i}, args)
+    topic.move_posts(current_user, post_ids_including_replies, args)
   end
 
 end

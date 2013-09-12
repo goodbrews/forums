@@ -11,8 +11,15 @@ Discourse.TopicController = Discourse.ObjectController.extend(Discourse.Selected
   summaryCollapsed: true,
   needs: ['header', 'modal', 'composer', 'quoteButton'],
   allPostsSelected: false,
-  selectedPosts: new Em.Set(),
   editingTopic: false,
+  selectedPosts: null,
+  selectedReplies: null,
+
+  init: function() {
+    this._super();
+    this.set('selectedPosts', new Em.Set());
+    this.set('selectedReplies', new Em.Set());
+  },
 
   jumpTopDisabled: function() {
     return (this.get('progressPosition') === 1);
@@ -82,18 +89,48 @@ Discourse.TopicController = Discourse.ObjectController.extend(Discourse.Selected
     return false;
   }.property('postStream.loaded', 'currentPost', 'postStream.filteredPostsCount'),
 
-  selectPost: function(post) {
+  deselectPost: function(post) {
+    this.get('selectedPosts').removeObject(post);
+
+    var selectedReplies = this.get('selectedReplies');
+    selectedReplies.removeObject(post);
+
+    var selectedReply = selectedReplies.findProperty('post_number', post.get('reply_to_post_number'));
+    if (selectedReply) { selectedReplies.removeObject(selectedReply); }
+
+    this.set('allPostsSelected', false);
+  },
+
+  postSelected: function(post) {
+    if (this.get('allPostsSelected')) { return true; }
+    if (this.get('selectedPosts').contains(post)) { return true; }
+    if (this.get('selectedReplies').findProperty('post_number', post.get('reply_to_post_number'))) { return true; }
+
+    return false;
+  },
+
+  toggledSelectedPost: function(post) {
     var selectedPosts = this.get('selectedPosts');
-    if (selectedPosts.contains(post)) {
-      selectedPosts.removeObject(post);
-      this.set('allPostsSelected', false);
+    if (this.postSelected(post)) {
+      this.deselectPost(post);
+      return false;
     } else {
       selectedPosts.addObject(post);
 
       // If the user manually selects all posts, all posts are selected
       if (selectedPosts.length === this.get('posts_count')) {
-        this.set('allPostsSelected');
+        this.set('allPostsSelected', true);
       }
+      return true;
+    }
+  },
+
+  toggledSelectedPostReplies: function(post) {
+    var selectedReplies = this.get('selectedReplies');
+    if (this.toggledSelectedPost(post)) {
+      selectedReplies.addObject(post);
+    } else {
+      selectedReplies.removeObject(post);
     }
   },
 
@@ -108,6 +145,7 @@ Discourse.TopicController = Discourse.ObjectController.extend(Discourse.Selected
 
   deselectAll: function() {
     this.get('selectedPosts').clear();
+    this.get('selectedReplies').clear();
     this.set('allPostsSelected', false);
   },
 
@@ -141,6 +179,9 @@ Discourse.TopicController = Discourse.ObjectController.extend(Discourse.Selected
 
       var topic = this.get('model');
 
+      // Topic title hasn't been sanitized yet, so the template shouldn't trust it.
+      this.set('topicSaving', true);
+
       // manually update the titles & category
       topic.setProperties({
         title: this.get('newTitle'),
@@ -157,9 +198,10 @@ Discourse.TopicController = Discourse.ObjectController.extend(Discourse.Selected
           title: title,
           fancy_title: fancy_title
         });
-
+        topicController.set('topicSaving', false);
       }, function(error) {
         topicController.set('editingTopic', true);
+        topicController.set('topicSaving', false);
         if (error && error.responseText) {
           bootbox.alert($.parseJSON(error.responseText).errors[0]);
         } else {
@@ -173,19 +215,28 @@ Discourse.TopicController = Discourse.ObjectController.extend(Discourse.Selected
   },
 
   deleteSelected: function() {
-    var topicController = this;
+    var self = this;
     bootbox.confirm(I18n.t("post.delete.confirm", { count: this.get('selectedPostsCount')}), function(result) {
       if (result) {
 
         // If all posts are selected, it's the same thing as deleting the topic
-        if (topicController.get('allPostsSelected')) {
-          return topicController.deleteTopic();
+        if (self.get('allPostsSelected')) {
+          return self.deleteTopic();
         }
 
-        var selectedPosts = topicController.get('selectedPosts');
-        Discourse.Post.deleteMany(selectedPosts);
-        topicController.get('content.posts').removeObjects(selectedPosts);
-        topicController.toggleMultiSelect();
+        var selectedPosts = self.get('selectedPosts'),
+            selectedReplies = self.get('selectedReplies'),
+            postStream = self.get('postStream'),
+            toRemove = new Ember.Set();
+
+
+        Discourse.Post.deleteMany(selectedPosts, selectedReplies);
+        postStream.get('posts').forEach(function (p) {
+          if (self.postSelected(p)) { toRemove.addObject(p); }
+        });
+
+        postStream.removePosts(toRemove);
+        self.toggleMultiSelect();
       }
     });
   },
@@ -222,7 +273,7 @@ Discourse.TopicController = Discourse.ObjectController.extend(Discourse.Selected
   },
 
   resetRead: function() {
-    Discourse.ScreenTrack.instance().reset();
+    Discourse.ScreenTrack.current().reset();
     this.unsubscribe();
 
     var topicController = this;
@@ -253,9 +304,10 @@ Discourse.TopicController = Discourse.ObjectController.extend(Discourse.Selected
   },
 
   // Toggle the star on the topic
-  toggleStar: function(e) {
+  toggleStar: function() {
     this.get('content').toggleStar();
   },
+
 
   /**
     Clears the pin from a topic for the currently logged in user
@@ -300,7 +352,7 @@ Discourse.TopicController = Discourse.ObjectController.extend(Discourse.Selected
   replyToPost: function(post) {
     var composerController = this.get('controllers.composer');
     var quoteController = this.get('controllers.quoteButton');
-    var quotedText = Discourse.BBCode.buildQuoteBBCode(quoteController.get('post'), quoteController.get('buffer'));
+    var quotedText = Discourse.Quote.build(quoteController.get('post'), quoteController.get('buffer'));
 
     var topic = post ? post.get('topic') : this.get('model');
 
@@ -332,7 +384,6 @@ Discourse.TopicController = Discourse.ObjectController.extend(Discourse.Selected
   },
 
   replyAsNewTopic: function(post) {
-    // TODO shut down topic draft cleanly if it exists ...
     var composerController = this.get('controllers.composer');
     var promise = composerController.open({
       action: Discourse.Composer.CREATE_TOPIC,
@@ -343,9 +394,9 @@ Discourse.TopicController = Discourse.ObjectController.extend(Discourse.Selected
 
     promise.then(function() {
       Discourse.Post.loadQuote(post.get('id')).then(function(q) {
-        composerController.appendText("" + (I18n.t("post.continue_discussion", {
+        composerController.appendText(I18n.t("post.continue_discussion", {
           postLink: postLink
-        })) + "\n\n" + q);
+        }) + "\n\n" + q);
       });
     });
   },
@@ -388,7 +439,35 @@ Discourse.TopicController = Discourse.ObjectController.extend(Discourse.Selected
   },
 
   deletePost: function(post) {
-    post.destroy(Discourse.User.current());
+    var user = Discourse.User.current(),
+        replyCount = post.get('reply_count'),
+        self = this;
+
+    // If the user is staff and the post has replies, ask if they want to delete replies too.
+    if (user.get('staff') && replyCount > 0) {
+      bootbox.dialog(I18n.t("post.controls.delete_replies.confirm", {count: replyCount}), [
+        {label: I18n.t("cancel"),
+         'class': 'btn-danger rightg'},
+        {label: I18n.t("post.controls.delete_replies.no_value"),
+          callback: function() {
+            post.destroy(user);
+          }
+        },
+        {label: I18n.t("post.controls.delete_replies.yes_value"),
+         'class': 'btn-primary',
+          callback: function() {
+            Discourse.Post.deleteMany([post], [post]);
+            self.get('postStream.posts').forEach(function (p) {
+              if (p === post || p.get('reply_to_post_number') === post.get('post_number')) {
+                p.setDeletedState(user);
+              }
+            });
+          }
+        }
+      ]);
+    } else {
+      post.destroy(user);
+    }
   },
 
   removeAllowedUser: function(username) {

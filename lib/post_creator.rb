@@ -20,6 +20,7 @@ class PostCreator
   #                             who is the post "author." For example when copying posts to a new
   #                             topic.
   #   created_at              - Post creation time (optional)
+  #   auto_track              - Automatically track this topic if needed (default true)
   #
   #   When replying to a topic:
   #     topic_id              - topic we're replying to
@@ -63,10 +64,12 @@ class PostCreator
       save_post
       extract_links
       store_unique_post_key
-      send_notifications_for_private_message
+      consider_clearing_flags
       track_topic
+      update_topic_stats
       update_user_counts
       publish
+      ensure_in_allowed_users if guardian.is_staff?
       @post.advance_draft_sequence
       @post.save_reply_relationships
     end
@@ -99,21 +102,16 @@ class PostCreator
     post.last_version_at ||= Time.now
   end
 
-  def self.after_create_tasks(post)
-    # Update attributes on the topic - featured users and last posted.
-    attrs = {last_posted_at: post.created_at, last_post_user_id: post.user_id}
-    attrs[:bumped_at] = post.created_at unless post.no_bump
-    post.topic.update_attributes(attrs)
-
-    # Update topic user data
-    TopicUser.change(post.user.id,
-                     post.topic.id,
-                     posted: true,
-                     last_read_post_number: post.post_number,
-                     seen_post_count: post.post_number)
-  end
 
   protected
+
+  def ensure_in_allowed_users
+    return unless @topic.private_message?
+
+    unless @topic.topic_allowed_users.where(user_id: @user.id).exists?
+      @topic.topic_allowed_users.create!(user_id: @user.id)
+    end
+  end
 
   def secure_group_ids(topic)
     @secure_group_ids ||= if topic.category && topic.category.read_restricted?
@@ -183,6 +181,13 @@ class PostCreator
     @topic = topic
   end
 
+  def update_topic_stats
+    # Update attributes on the topic - featured users and last posted.
+    attrs = {last_posted_at: @post.created_at, last_post_user_id: @post.user_id}
+    attrs[:bumped_at] = @post.created_at unless @post.no_bump
+    @topic.update_attributes(attrs)
+  end
+
   def setup_post
     post = @topic.posts.new(raw: @opts[:raw],
                             user: @user,
@@ -215,24 +220,12 @@ class PostCreator
   end
 
   def store_unique_post_key
-    if SiteSetting.unique_posts_mins > 0
-      $redis.setex(@post.unique_post_key, SiteSetting.unique_posts_mins.minutes.to_i, "1")
-    end
+    @post.store_unique_post_key
   end
 
-  def send_notifications_for_private_message
-    # send a mail to notify users in case of a private message
-    if @topic.private_message?
-      @topic.allowed_users.where(["users.email_private_messages = true and users.id != ?", @user.id]).each do |u|
-        Jobs.enqueue_in(SiteSetting.email_time_window_mins.minutes,
-                          :user_email,
-                          type: :private_message,
-                          user_id: u.id,
-                          post_id: @post.id
-                       )
-      end
-
-      clear_possible_flags(@topic) if @post.post_number > 1 && @topic.user_id != @post.user_id
+  def consider_clearing_flags
+    if @topic.private_message? && @post.post_number > 1 && @topic.user_id != @post.user_id
+      clear_possible_flags(@topic)
     end
   end
 
@@ -264,7 +257,15 @@ class PostCreator
   end
 
   def track_topic
-    TopicUser.auto_track(@user.id, @topic.id, TopicUser.notification_reasons[:created_post])
+    unless @opts[:auto_track] == false
+      TopicUser.auto_track(@user.id, @topic.id, TopicUser.notification_reasons[:created_post])
+      # Update topic user data
+      TopicUser.change(@post.user.id,
+                       @post.topic.id,
+                       posted: true,
+                       last_read_post_number: @post.post_number,
+                       seen_post_count: @post.post_number)
+    end
   end
 
   def enqueue_jobs

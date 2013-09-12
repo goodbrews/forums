@@ -92,6 +92,8 @@ predef:
   - find
   - sinon
   - controllerFor
+  - testController
+  - Favcount
 
 browser:  true      # true if the standard browser globals should be predefined
 rhino:    false     # true if the Rhino environment globals should be predefined

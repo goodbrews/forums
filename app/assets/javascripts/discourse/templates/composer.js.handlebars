@@ -2,23 +2,7 @@
 
 <div class='contents'>
 
-  <div class='composer-popup-container'>
-    <div id='new-user-education' class='composer-popup' style='display: none'>
-      <a href='#' {{action closeEducation}} class='close'><i class='icon icon-remove-sign'></i></a>
-      {{{educationContents}}}
-    </div>
-
-    <div id='similar-topics' class='composer-popup' style='display: none'>
-      <a href='#' {{action closeSimilar}} class='close'><i class='icon icon-remove-sign'></i></a>
-      <h3>{{i18n composer.similar_topics}}<h3>
-
-      <ul class='topics'>
-        {{#each similarTopics}}
-          <li>{{{topicLink this}}} <span class='posts-count'>({{{i18n topic.filters.n_posts count="posts_count"}}})</span></li>
-        {{/each}}
-      </ul>
-    </div>
-  </div>
+  {{render composerMessages}}
 
   <div class='control'>
     <a href='#' class='toggler' {{action toggle bubbles=false}} title='{{i18n composer.toggler}}'></a>
@@ -46,7 +30,7 @@
 
             {{#unless model.creatingPrivateMessage}}
               <div class="category-input">
-                {{categoryChooser valueAttribute="name" value=model.categoryName showUncategorized="true"}}
+                {{categoryChooser valueAttribute="name" value=model.categoryName}}
                 {{popupInputTip validation=view.categoryValidation shownAt=view.showCategoryTip}}
               </div>
               {{#if model.archetype.hasOptions}}
@@ -77,7 +61,7 @@
             <div id='draft-status'></div>
             {{#if view.isUploading}}
               <div id="file-uploading">
-                {{i18n upload_selector.upload_file}} {{view.uploadProgress}}% <a id="cancel-file-upload">{{i18n cancel}}</a>
+                {{i18n upload_selector.uploading}} {{view.uploadProgress}}% <a id="cancel-file-upload">{{i18n cancel}}</a>
               </div>
             {{/if}}
           {{/if}}

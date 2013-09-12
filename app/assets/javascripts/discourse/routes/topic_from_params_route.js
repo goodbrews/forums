@@ -9,6 +9,7 @@
 Discourse.TopicFromParamsRoute = Discourse.Route.extend({
 
   setupController: function(controller, params) {
+
     params = params || {};
     params.track_visit = true;
 
@@ -21,7 +22,7 @@ Discourse.TopicFromParamsRoute = Discourse.Route.extend({
       postStream.set('bestOf', Em.get(queryParams, 'filter') === 'best_of');
 
       // Set any username filters on the postStream
-      var userFilters = Em.get(queryParams, 'username_filters[]');
+      var userFilters = Em.get(queryParams, 'username_filters') || Em.get(queryParams, 'username_filters[]');
       if (userFilters) {
         if (typeof userFilters === "string") { userFilters = [userFilters]; }
         userFilters.forEach(function (username) {
@@ -34,7 +35,6 @@ Discourse.TopicFromParamsRoute = Discourse.Route.extend({
         composerController = this.controllerFor('composer');
 
     postStream.refresh(params).then(function () {
-
       // The post we requested might not exist. Let's find the closest post
       var closest = postStream.closestPostNumberFor(params.nearPost) || 1;
 
@@ -53,13 +53,10 @@ Discourse.TopicFromParamsRoute = Discourse.Route.extend({
           ignoreIfChanged: true
         });
       }
-
-
     });
-
-
   }
 
 });
 
+Discourse.TopicFromParamsNearRoute = Discourse.TopicFromParamsRoute;
 

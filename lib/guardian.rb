@@ -9,6 +9,7 @@ class Guardian
     def secure_category_ids; []; end
     def topic_create_allowed_category_ids; []; end
     def has_trust_level?(level); false; end
+    def email; nil; end
   end
 
   def initialize(user=nil)
@@ -36,6 +37,17 @@ class Guardian
     @user.staff?
   end
 
+  def is_developer?
+    @user &&
+    is_admin? &&
+    (Rails.env.development? ||
+      (
+        Rails.configuration.respond_to?(:developer_emails) &&
+        Rails.configuration.developer_emails.include?(@user.email)
+      )
+    )
+  end
+
   # Can the user see the object?
   def can_see?(obj)
     if obj
@@ -46,18 +58,12 @@ class Guardian
 
   # Can the user edit the obj
   def can_edit?(obj)
-    if obj && authenticated?
-      edit_method = method_name_for :edit, obj
-      return (edit_method ? send(edit_method, obj) : true)
-    end
+    can_do?(:edit, obj)
   end
 
   # Can we delete the object
   def can_delete?(obj)
-    if obj && authenticated?
-      delete_method = method_name_for :delete, obj
-      return (delete_method ? send(delete_method, obj) : true)
-    end
+    can_do?(:delete, obj)
   end
 
   def can_moderate?(obj)
@@ -95,8 +101,8 @@ class Guardian
     # You must be an admin to impersonate
     is_admin? &&
 
-    # You may not impersonate other admins
-    not(target.admin?)
+    # You may not impersonate other admins unless you are a dev
+    (!target.admin? || is_developer?)
 
     # Additionally, you may not impersonate yourself;
     # but the two tests for different admin statuses
@@ -139,7 +145,7 @@ class Guardian
   end
 
   def can_change_trust_level?(user)
-    can_administer?(user)
+    user && is_staff?
   end
 
   def can_block_user?(user)
@@ -150,8 +156,8 @@ class Guardian
     user && is_staff?
   end
 
-  def can_delete_user?(user_to_delete)
-    can_administer?(user_to_delete) && user_to_delete.post_count <= 0
+  def can_delete_user?(user)
+    user && is_staff? && !user.admin? && user.created_at > SiteSetting.delete_user_max_age.to_i.days.ago
   end
 
   # Can we see who acted on a post in a particular way?
@@ -203,7 +209,7 @@ class Guardian
   end
 
   def can_delete_all_posts?(user)
-    is_staff? && user.created_at >= 7.days.ago
+    is_staff? && user && !user.admin? && user.created_at >= SiteSetting.delete_user_max_age.days.ago && user.post_count <= SiteSetting.delete_all_posts_max.to_i
   end
 
   def can_remove_allowed_users?(topic)
@@ -235,11 +241,11 @@ class Guardian
   end
 
   def can_create_topic?(parent)
-    can_create_post?(parent)
+    user && user.trust_level >= SiteSetting.min_trust_to_create_topic.to_i && can_create_post?(parent)
   end
 
   def can_create_topic_on_category?(category)
-    can_create_post?(nil) && (
+    can_create_topic?(nil) && (
       !category ||
       Category.topic_create_allowed(self).where(:id => category.id).count == 1
     )
@@ -267,7 +273,7 @@ class Guardian
   end
 
   def can_edit_post?(post)
-    is_staff? || (not(post.topic.archived?) && is_my_own?(post))
+    is_staff? || (!post.topic.archived? && is_my_own?(post) && !post.user_deleted &&!post.deleted_at)
   end
 
   def can_edit_user?(user)
@@ -276,6 +282,10 @@ class Guardian
 
   def can_edit_topic?(topic)
     !topic.archived && (is_staff? || is_my_own?(topic))
+  end
+
+  def can_edit_username?(user)
+    is_staff? || (is_me?(user) && (user.post_count == 0 || user.created_at > SiteSetting.username_change_period.days.ago))
   end
 
   # Deleting Methods
@@ -291,7 +301,7 @@ class Guardian
 
   # Recovery Method
   def can_recover_post?(post)
-    is_staff?
+    is_staff? || (is_my_own?(post) && post.user_deleted && !post.deleted_at)
   end
 
   def can_recover_topic?(topic)
@@ -342,8 +352,12 @@ class Guardian
       # not secure, or I can see it
       (not(topic.read_restricted_category?) || can_see_category?(topic.category)) &&
 
-      # not private, or I am allowed (or an admin)
-      (not(topic.private_message?) || authenticated? && (topic.all_allowed_users.where(id: @user.id).exists? || is_admin?))
+      # NOTE
+      # At the moment staff can see PMs, there is some talk of restricting this, however
+      # we still need to allow staff to join PMs for the case of flagging ones
+
+      # not private, or I am allowed (or is staff)
+      (not(topic.private_message?) || authenticated? && (topic.all_allowed_users.where(id: @user.id).exists? || is_staff?))
     end
   end
 
@@ -390,6 +404,12 @@ class Guardian
     @secure_category_ids ||= @user.secure_category_ids
   end
 
+  # all allowed category ids
+  def allowed_category_ids
+    unrestricted = Category.where(read_restricted: false).pluck(:id)
+    unrestricted.concat(secure_category_ids)
+  end
+
   def topic_create_allowed_category_ids
     @topic_create_allowed_category_ids ||= @user.topic_create_allowed_category_ids
   end
@@ -422,6 +442,13 @@ class Guardian
   def method_name_for(action, obj)
     method_name = :"can_#{action}_#{obj.class.name.underscore}?"
     return method_name if respond_to?(method_name)
+  end
+
+  def can_do?(action, obj)
+    if obj && authenticated?
+      action_method = method_name_for action, obj
+      return (action_method ? send(action_method, obj) : true)
+    end
   end
 
 end

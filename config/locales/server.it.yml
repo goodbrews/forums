@@ -107,7 +107,7 @@ it:
               cant_send_pm: "Spriacenti, non puoi mandare un messaggio privato a quell'utente."
 
   user_profile:
-    no_info_me: "<div class='missing-profile'>il campo About Me del tuo profilo è vuoto, <a href='/users/%{username_lower}/preferences'>vuoi compilarlo?</a></div>"
+    no_info_me: "<div class='missing-profile'>il campo About Me del tuo profilo è vuoto, <a href='/users/%{username_lower}/preferences/about-me'>vuoi compilarlo?</a></div>"
     no_info_other: "<div class='missing-profile'>%{name} non ha ancora compilato il campo About Me del suo profilo.</div>"
 
   category:
@@ -371,7 +371,6 @@ it:
     rails_env_warning: "Il tuo server è in modalità %{env}."
     host_names_warning: "Il tuo file config/database.yml sta usando l'hostname localhost di default. Aggiornalo con l'hostname del tuo sito."
     gc_warning: 'Il tuo server sta usando i parametri di garbage collection di default di ruby, che potrebbero non garantirti le migliori performance. Leggi questo topic sul tuning delle performance: <a href="http://meta.discourse.org/t/tuning-ruby-and-rails-for-discourse/4126">Tuning Ruby and Rails for Discourse</a>.'
-    clockwork_warning: 'Clockwork non è in esecuzione. Assicurati che un processo clockwork sia sempre in esecuzione per far sì che task importanti possano essere messi in coda. <a href="https://github.com/tomykaira/clockwork">Leggi di più su clockwork qui</a>.'
     sidekiq_warning: "Sidekiq non è in esecuzione. Molti task, come l'invio di email, sono eseguiti in maniera asincrona da sidekiq. Perfavore assicurati che almeno un processo sidekiq sia in esecuzione. <a href=\"https://github.com/mperham/sidekiq\">Leggi di più su sidekiq qui</a>."
     queue_size_warning: 'Il numero di job in coda è %{queue_size}, che è alto. Questo indica un problema con i processi Sidekiq, oppure dovresti aggiungere altri Sidekiq worker.'
     memory_warning: 'Il tuo server ha meno di 1 GB di memoria. È raccomandato avere a disposizione almeno 1 GB di memoria.'
@@ -471,7 +470,7 @@ it:
     track_external_right_clicks: "Traccia i link esterni sui quali viene fatto click destro (es: apri in una nuova tab). Disabilitato di default perché viene fatto il rewrite delle URL"
     topics_per_page: "Quanti topic vengono caricati di default nella pagina di lista topic"
     posts_per_page: "Quanti post vengono restituiti in una pagina di un topic"
-    system_username: "Username dell'autore dei messaggi privati automatizzati spediti dal forum"
+    site_contact_username: "Username dell'autore dei messaggi privati automatizzati spediti dal forum"
     send_welcome_message: "I nuovi utenti ricevono un messaggio di benvenuto?"
     suppress_reply_directly_below: "Non mostrare il numero di risposte ad un post quando c'è una singola risposta appena sotto"
     allow_index_in_robots_txt: "Il sito è indicizzabile dai motori di ricerta (aggiorna robots.txt)"
@@ -560,7 +559,7 @@ it:
     min_body_similar_length: "Lunghezza minima del contenuto di un post perattivare il controllo su topic simili"
 
     category_colors: "Lista di colori esadecimali per sfondo categorie, separati da pipe (\"|\")"
-    max_upload_size_kb: "Dimensione massima in kB per gli upload degli utenti - assicurati di configurare il limite in nginx (client_max_body_size) o apache."
+    max_image_size_kb: "Dimensione massima in kB per gli upload degli utenti - assicurati di configurare il limite in nginx (client_max_body_size) o apache."
     max_similar_results: "Numero di topic simili da mostrare all'utente durante la creazione di un nuovo topic"
 
     title_prettify: "Previeni typo e errori comuni nei titoli, inclusi tutto maiuscola, primo carattere minuscolo, ! e ? ripetuti, . aggiuntivi alla fine, etc etc."
@@ -840,7 +839,7 @@ it:
         Perfavore visita questo link per rispondere: %{base_url}%{url}
 
     user_posted:
-      subject_template: "[%{site_name}] %{username} ha postato in '%{topic_title}'"
+      subject_template: "[%{site_name}] %{subject_prefix}%{username} ha postato in '%{topic_title}'"
       text_body_template: |
         %{username} ha postato in '%{topic_title}' su %{site_name}:
 
@@ -858,17 +857,6 @@ it:
       unsubscribe: "Questa email di riepilogo è stata inviata da %{site_link} perché non ti abbiamo visto da un pò.\nSe vuoi disabilitare l'invio o cambiare le preferenze email, %{unsubscribe_link}."
       click_here: "clicca qui"
       from: "%{site_name} riepilogo"
-
-    private_message:
-      subject_template: "[%{site_name}] %{subject_prefix}%{topic_title}"
-      text_body_template: |
-        %{private_message_from} ti ha appena inviato un messaggio privato
-
-        ---
-        %{message}
-
-        ---
-        Perfavore visita questo link per rispondere: %{base_url}%{url}
 
     forgot_password:
       subject_template: "[%{site_name}] Reset Password"
@@ -917,7 +905,7 @@ it:
 
   upload:
     pasted_image_filename: ""
-    image:
+    images:
       fetch_failure: "Spiacente, si è verificato un errore nel recupero dell'immagine."
       unknown_image_type: "Spiacente, ma il file che hai provato a caricare non sembra un'immagine."
       size_not_found: "Spiacente, ma non riusciamo a determinare la dimensione dell'immagine. Probabilmente l'immagine è corrotta?"

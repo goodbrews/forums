@@ -3,7 +3,7 @@ require 'topic_view'
 
 describe TopicView do
 
-  let(:topic) { Fabricate(:topic) }
+  let(:topic) { create_topic }
   let(:coding_horror) { Fabricate(:coding_horror) }
   let(:first_poster) { topic.user }
 
@@ -109,53 +109,39 @@ describe TopicView do
       let(:path) { "/1234" }
 
       before do
-        topic.expects(:relative_url).returns(path)
-        described_class.any_instance.expects(:find_topic).with(1234).returns(topic)
+        topic.stubs(:relative_url).returns(path)
+        TopicView.any_instance.stubs(:find_topic).with(1234).returns(topic)
       end
 
-      context "without a post number" do
-        context "without a page" do
-          it "generates a canonical path for a topic" do
-            described_class.new(1234, user).canonical_path.should eql(path)
-          end
-        end
-
-        context "with a page" do
-          let(:path_with_page) { "/1234?page=5" }
-
-          it "generates a canonical path for a topic" do
-            described_class.new(1234, user, page: 5).canonical_path.should eql(path_with_page)
-          end
-        end
+      it "generates canonical path correctly" do
+        TopicView.new(1234, user).canonical_path.should eql(path)
+        TopicView.new(1234, user, page: 5).canonical_path.should eql("/1234?page=5")
       end
-      context "with a post number" do
-        let(:path_with_page) { "/1234?page=10" }
-        before { SiteSetting.stubs(:posts_per_page).returns(5) }
 
-        it "generates a canonical path for a topic" do
-          described_class.new(1234, user, post_number: 50).canonical_path.should eql(path_with_page)
-        end
+      it "generates a canonical correctly for paged results" do
+        SiteSetting.stubs(:posts_per_page).returns(5)
+        TopicView.new(1234, user, post_number: 50).canonical_path.should eql("/1234?page=10")
       end
     end
 
     describe "#next_page" do
       let(:p2) { stub(post_number: 2) }
       let(:topic) do
-        topic = Fabricate(:topic)
+        topic = create_topic
         topic.stubs(:highest_post_number).returns(5)
         topic
       end
       let(:user) { Fabricate(:user) }
 
       before do
-        described_class.any_instance.expects(:find_topic).with(1234).returns(topic)
-        described_class.any_instance.stubs(:filter_posts)
-        described_class.any_instance.stubs(:last_post).returns(p2)
+        TopicView.any_instance.expects(:find_topic).with(1234).returns(topic)
+        TopicView.any_instance.stubs(:filter_posts)
+        TopicView.any_instance.stubs(:last_post).returns(p2)
         SiteSetting.stubs(:posts_per_page).returns(2)
       end
 
       it "should return the next page" do
-        described_class.new(1234, user).next_page.should eql(2)
+        TopicView.new(1234, user).next_page.should eql(2)
       end
     end
 
@@ -183,17 +169,17 @@ describe TopicView do
     end
 
     context '.read?' do
-      it 'is unread with no logged in user' do
+      it 'tracks correctly' do
+        # anon has nothing
         TopicView.new(topic.id).read?(1).should be_false
-      end
 
-      it 'makes posts as unread by default' do
+        # random user has nothing
         topic_view.read?(1).should be_false
-      end
 
-      it 'knows a post is read when it has a PostTiming' do
-        PostTiming.create(topic: topic, user: coding_horror, post_number: 1, msecs: 1000)
-        topic_view.read?(1).should be_true
+        # a real user that just read it should have it marked
+        PostTiming.process_timings(coding_horror, topic.id, 1, [[1,1000]])
+        TopicView.new(topic.id, coding_horror).read?(1).should be_true
+        TopicView.new(topic.id, coding_horror).topic_user.should be_present
       end
     end
 
@@ -201,18 +187,15 @@ describe TopicView do
       it 'returns nil when there is no user' do
         TopicView.new(topic.id, nil).topic_user.should be_blank
       end
-
-      it 'returns a record once the user has some data' do
-        TopicView.new(topic.id, coding_horror).topic_user.should be_present
-      end
     end
 
     context '#recent_posts' do
       before do
-        24.times do # our let()s have already created 3
-          Fabricate(:post, topic: topic, user: first_poster)
+        24.times do |t| # our let()s have already created 3
+          Fabricate(:post, topic: topic, user: first_poster, created_at: t.seconds.from_now)
         end
       end
+
       it 'returns at most 25 recent posts ordered newest first' do
         recent_posts = topic_view.recent_posts
 
@@ -233,6 +216,7 @@ describe TopicView do
     # Create the posts in a different order than the sort_order
     let!(:p5) { Fabricate(:post, topic: topic, user: coding_horror)}
     let!(:p2) { Fabricate(:post, topic: topic, user: coding_horror)}
+    let!(:p6) { Fabricate(:post, topic: topic, user: Fabricate(:user), deleted_at: Time.now)}
     let!(:p4) { Fabricate(:post, topic: topic, user: coding_horror, deleted_at: Time.now)}
     let!(:p1) { Fabricate(:post, topic: topic, user: first_poster)}
     let!(:p3) { Fabricate(:post, topic: topic, user: first_poster)}
@@ -241,10 +225,12 @@ describe TopicView do
       SiteSetting.stubs(:posts_per_page).returns(3)
 
       # Update them to the sort order we're checking for
-      [p1, p2, p3, p4, p5].each_with_index do |p, idx|
+      [p1, p2, p3, p4, p5, p6].each_with_index do |p, idx|
         p.sort_order = idx + 1
         p.save
       end
+      p6.user_id = nil # user got nuked
+      p6.save!
     end
 
     describe '#filter_posts_paged' do
@@ -253,6 +239,7 @@ describe TopicView do
       it 'returns correct posts for all pages' do
         topic_view.filter_posts_paged(1).should == [p1, p2]
         topic_view.filter_posts_paged(2).should == [p3, p5]
+        topic_view.filter_posts_paged(3).should == []
         topic_view.filter_posts_paged(100).should == []
       end
     end
@@ -288,12 +275,25 @@ describe TopicView do
         near_view.posts.should == [p2, p3, p4]
       end
 
+      it "returns deleted posts by nuked users to an admin" do
+        coding_horror.admin = true
+        near_view = topic_view_near(p5)
+        near_view.desired_post.should == p5
+        near_view.posts.should == [p4, p5, p6]
+      end
+
       context "when 'posts per page' exceeds the number of posts" do
         before { SiteSetting.stubs(:posts_per_page).returns(100) }
 
         it 'returns all the posts' do
           near_view = topic_view_near(p5)
           near_view.posts.should == [p1, p2, p3, p5]
+        end
+
+        it 'returns deleted posts to admins' do
+          coding_horror.admin = true
+          near_view = topic_view_near(p5)
+          near_view.posts.should == [p1, p2, p3, p4, p5, p6]
         end
       end
     end

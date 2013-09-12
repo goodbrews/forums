@@ -4,7 +4,7 @@ Discourse.Formatter = (function(){
 
   var updateRelativeAge, autoUpdatingRelativeAge, relativeAge, relativeAgeTiny,
       relativeAgeMedium, relativeAgeMediumSpan, longDate, toTitleCase,
-      shortDate, shortDateNoYear, breakUp;
+      shortDate, shortDateNoYear, tinyDateYear, breakUp;
 
   breakUp = function(string, maxLength){
     if(string.length <= maxLength) {
@@ -13,13 +13,29 @@ Discourse.Formatter = (function(){
 
     var firstPart = string.substr(0, maxLength);
 
-    var betterSplit = firstPart.substr(1).search(/[^a-z]/);
-    if (betterSplit >= 0) {
-      var offset = 1;
-      if(string[betterSplit+1] === "_") {
-        offset = 2;
+    // work backward to split stuff like ABPoop to AB Poop
+    var i;
+    for(i=firstPart.length-1;i>0;i--){
+      if(firstPart[i].match(/[A-Z]/)){
+        break;
       }
-      return string.substr(0, betterSplit + offset) + " " + string.substring(betterSplit + offset);
+    }
+
+    // work forwards to split stuff like ab111 to ab 111
+    if(i===0) {
+      for(i=1;i<firstPart.length;i++){
+        if(firstPart[i].match(/[^a-z]/)){
+          break;
+        }
+      }
+    }
+
+    if (i > 0 && i < firstPart.length) {
+      var offset = 0;
+      if(string[i] === "_") {
+        offset = 1;
+      }
+      return string.substr(0, i + offset) + " " + string.substring(i + offset);
     } else {
       return firstPart + " " + string.substr(maxLength);
     }
@@ -31,6 +47,10 @@ Discourse.Formatter = (function(){
 
   shortDateNoYear = function(date) {
     return moment(date).shortDateNoYear();
+  };
+
+  tinyDateYear = function(date) {
+    return moment(date).format("D MMM 'YY");
   };
 
   // http://stackoverflow.com/questions/196972/convert-string-to-title-case-with-javascript
@@ -114,15 +134,11 @@ Discourse.Formatter = (function(){
     case(distanceInMinutes >= 2520 && distanceInMinutes <= ((Discourse.SiteSettings.relative_date_duration||14) * 1440)):
       formatted = t("x_days", {count: Math.round(distanceInMinutes / 1440.0)});
       break;
-    case(distanceInMinutes >= ((Discourse.SiteSettings.relative_date_duration||14) * 1440) && distanceInMinutes <= 525599):
-      formatted = shortDateNoYear(date);
-      break;
     default:
-      var months = Math.round(distanceInMinutes / 43200.0);
-      if (months < 12) {
+      if(date.getFullYear() === new Date().getFullYear()) {
         formatted = shortDateNoYear(date);
       } else {
-        formatted = t("over_x_years", {count: Math.round(months / 12.0)});
+        formatted = tinyDateYear(date);
       }
       break;
     }

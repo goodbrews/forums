@@ -7,13 +7,17 @@ class Validators::PostValidator < ActiveModel::Validator
     raw_quality(record)
     max_mention_validator(record)
     max_images_validator(record)
+    max_attachments_validator(record)
     max_links_validator(record)
     unique_post_validator(record)
   end
 
   def presence(post)
-    [:raw,:user_id,:topic_id].each do |attr_name|
+    [:raw,:topic_id].each do |attr_name|
        post.errors.add(attr_name, :blank, options) if post.send(attr_name).blank?
+    end
+    if post.new_record? and post.user_id.nil?
+      post.errors.add(:user_id, :blank, options)
     end
   end
 
@@ -41,6 +45,11 @@ class Validators::PostValidator < ActiveModel::Validator
     add_error_if_count_exceeded(post, :too_many_images, post.image_count, SiteSetting.newuser_max_images) unless acting_user_is_trusted?(post)
   end
 
+  # Ensure new users can not put too many attachments in a post
+  def max_attachments_validator(post)
+    add_error_if_count_exceeded(post, :too_many_attachments, post.attachment_count, SiteSetting.newuser_max_attachments) unless acting_user_is_trusted?(post)
+  end
+
   # Ensure new users can not put too many links in a post
   def max_links_validator(post)
     add_error_if_count_exceeded(post, :too_many_links, post.link_count, SiteSetting.newuser_max_links) unless acting_user_is_trusted?(post)
@@ -49,12 +58,13 @@ class Validators::PostValidator < ActiveModel::Validator
   # Stop us from posting the same thing too quickly
   def unique_post_validator(post)
     return if SiteSetting.unique_posts_mins == 0
+    return if post.skip_unique_check
     return if post.acting_user.admin? || post.acting_user.moderator?
 
     # If the post is empty, default to the validates_presence_of
     return if post.raw.blank?
 
-    if $redis.exists(post.unique_post_key)
+    if post.matches_recent_post?
       post.errors.add(:raw, I18n.t(:just_posted_that))
     end
   end

@@ -1,5 +1,5 @@
 /**
-  This view handles rendering of an activity in a user's stream
+  This view handles rendering of an activity in a user's profile
 
   @class ActivityFilterView
   @extends Discourse.View
@@ -10,76 +10,69 @@ Discourse.ActivityFilterView = Discourse.View.extend({
   tagName: 'li',
   classNameBindings: ['active', 'noGlyph'],
 
-  stream: Em.computed.alias('controller.content'),
+  userActionType: Em.computed.alias('controller.userActionType'),
   shouldRerender: Discourse.View.renderIfChanged('count'),
-
   noGlyph: Em.computed.empty('icon'),
 
   active: function() {
     var content = this.get('content');
     if (content) {
-      return parseInt(this.get('stream.filter'), 10) === parseInt(Em.get(content, 'action_type'), 10);
+      return parseInt(this.get('userActionType'), 10) === parseInt(Em.get(content, 'action_type'), 10);
     } else {
-      return this.blank('stream.filter');
+      return this.blank('userActionType');
     }
-  }.property('stream.filter', 'content.action_type'),
+  }.property('userActionType', 'content.action_type'),
+
+  activityCount: function() {
+    return this.get('content.count') || this.get('count');
+  }.property('content.count', 'count'),
+
+  typeKey: function() {
+
+    var actionType = this.get('content.action_type');
+    if (actionType === Discourse.UserAction.TYPES.messages_received) { return ""; }
+
+    var result = Discourse.UserAction.TYPES_INVERTED[actionType];
+    if (!result) { return ""; }
+
+    // We like our URLS to have hyphens, not underscores
+    return "/" + result.replace("_", "-");
+  }.property('content.action_type'),
+
+  url: function() {
+    return "/users/" + this.get('user.username_lower') + "/activity" + this.get('typeKey');
+  }.property('typeKey', 'user.username_lower'),
+
+  description: function() {
+    return this.get('content.description') || I18n.t("user.filters.all");
+  }.property('content.description'),
 
   render: function(buffer) {
-    var content = this.get("content");
-    var count, description;
-
-    if (content) {
-      count = Em.get(content, "count");
-      description = Em.get(content, "description");
-    } else {
-      count = this.get("count");
-      description = I18n.t("user.filters.all");
-    }
-
+    buffer.push("<a href='" + this.get('url') + "'>");
     var icon = this.get('icon');
-
-    buffer.push("<a href='#'>");
-    if(icon) {
+    if (icon) {
       buffer.push("<i class='glyph icon icon-" + icon + "'></i> ");
     }
 
-    buffer.push(description +
-        " <span class='count'>(" + count + ")</span>");
-
-
+    buffer.push(this.get('description') + " <span class='count'>(" + this.get('activityCount') + ")</span>");
     buffer.push("<span class='icon-chevron-right'></span></a>");
-
   },
 
   icon: function(){
-    var action_type = parseInt(this.get("content.action_type"),10);
-    var icon;
-
-    switch(action_type){
-      case Discourse.UserAction.WAS_LIKED:
-        icon = "heart";
-        break;
-      case Discourse.UserAction.BOOKMARK:
-        icon = "bookmark";
-        break;
-      case Discourse.UserAction.EDIT:
-        icon = "pencil";
-        break;
-      case Discourse.UserAction.RESPONSE:
-        icon = "reply";
-        break;
-      case Discourse.UserAction.STAR:
-        icon = "star";
-        break;
+    switch(parseInt(this.get('content.action_type'),10)) {
+      case Discourse.UserAction.TYPES.likes_received:
+        return "heart";
+      case Discourse.UserAction.TYPES.bookmarks:
+        return "bookmark";
+      case Discourse.UserAction.TYPES.edits:
+        return "pencil";
+      case Discourse.UserAction.TYPES.replies:
+        return "reply";
+      case Discourse.UserAction.TYPES.favorites:
+        return "star";
     }
+  }.property("content.action_type")
 
-    return icon;
-  }.property("content.action_type"),
-
-  click: function() {
-    this.set('stream.filter', this.get('content.action_type'));
-    return false;
-  }
 });
 
 Discourse.View.registerHelper('activityFilter', Discourse.ActivityFilterView);

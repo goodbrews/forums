@@ -122,8 +122,10 @@ var jsHintOpts = {
     "console",
     "alert",
     "controllerFor",
+    "testController",
     "containsInstance",
     "deepEqual",
+    "notEqual",
     "Blob",
     "File"],
   "node" : false,
@@ -164,6 +166,8 @@ var jsHintOpts = {
       to_ignore.each do |ig|
         ok = false if (filename =~ ig)
       end
+
+      depend_on filename
 
       result << "qHint('#{filename}', '/assets/#{filename}', jsHintOpts);\n" if ok
 

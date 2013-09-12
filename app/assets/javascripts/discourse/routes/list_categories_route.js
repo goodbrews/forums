@@ -14,7 +14,7 @@ Discourse.ListCategoriesRoute = Discourse.Route.extend({
     createCategory: function() {
       Discourse.Route.showModal(this, 'editCategory', Discourse.Category.create({
         color: 'AB9364', text_color: 'FFFFFF', hotness: 5, group_permissions: [{group_name: "everyone", permission_type: 1}],
-        available_groups: Discourse.Site.instance().group_names
+        available_groups: Discourse.Site.current().group_names
       }));
       this.controllerFor('editCategory').set('selectedTab', 'general');
     }
@@ -38,7 +38,12 @@ Discourse.ListCategoriesRoute = Discourse.Route.extend({
   afterModel: function(categoryList) {
     this.controllerFor('list').setProperties({
       canCreateCategory: categoryList.get('can_create_category'),
-      canCreateTopic: categoryList.get('can_create_topic'),
+      canCreateTopic: categoryList.get('can_create_topic')
+    });
+  },
+
+  enter: function() {
+    this.controllerFor('list').setProperties({
       filterMode: 'categories',
       category: null
     });

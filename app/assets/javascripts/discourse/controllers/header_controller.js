@@ -22,7 +22,19 @@ Discourse.HeaderController = Discourse.Controller.extend({
 
   showFavoriteButton: function() {
     return Discourse.User.current() && !this.get('topic.isPrivateMessage');
-  }.property('topic.isPrivateMessage')
+  }.property('topic.isPrivateMessage'),
+
+  mobileDevice: function() {
+    return Discourse.Mobile.isMobileDevice;
+  }.property(),
+
+  mobileView: function() {
+    return Discourse.Mobile.mobileView;
+  }.property(),
+
+  toggleMobileView: function() {
+    Discourse.Mobile.toggleMobileView();
+  }
 
 });
 

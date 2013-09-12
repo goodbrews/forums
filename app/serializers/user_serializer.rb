@@ -9,6 +9,7 @@ class UserSerializer < BasicUserSerializer
              :created_at,
              :website,
              :can_edit,
+             :can_edit_username,
              :stats,
              :can_send_private_message_to_user,
              :bio_excerpt,
@@ -50,7 +51,11 @@ class UserSerializer < BasicUserSerializer
                      :new_topic_duration_minutes,
                      :external_links_in_new_tab,
                      :dynamic_favicon,
-                     :enable_quoting
+                     :enable_quoting,
+                     :use_uploaded_avatar,
+                     :has_uploaded_avatar,
+                     :gravatar_template,
+                     :uploaded_avatar_template
 
 
   def auto_track_topics_after_msecs
@@ -69,8 +74,16 @@ class UserSerializer < BasicUserSerializer
     scope.can_edit?(object)
   end
 
+  def can_edit_username
+    scope.can_edit_username?(object)
+  end
+
   def stats
     UserAction.stats(object.id, scope)
+  end
+
+  def gravatar_template
+    User.gravatar_template(object.email)
   end
 
 end

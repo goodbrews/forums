@@ -9,6 +9,10 @@
 **/
 Discourse.FlagController = Discourse.ObjectController.extend(Discourse.ModalFunctionality, {
 
+  onShow: function() {
+    this.set('selected', null);
+  },
+
   changePostActionType: function(action) {
     this.set('selected', action);
   },
@@ -31,7 +35,7 @@ Discourse.FlagController = Discourse.ObjectController.extend(Discourse.ModalFunc
   canTakeAction: function() {
     // We can only take actions on non-custom flags
     if (this.get('selected.is_custom_flag')) return false;
-    return Discourse.User.current('staff');
+    return Discourse.User.currentProp('staff');
   }.property('selected.is_custom_flag'),
 
   submitText: function(){
@@ -54,13 +58,40 @@ Discourse.FlagController = Discourse.ObjectController.extend(Discourse.ModalFunc
 
     if (opts) params = $.extend(params, opts);
 
+    $('#discourse-modal').modal('hide');
     postAction.act(params).then(function() {
       flagController.send('closeModal');
     }, function(errors) {
+      $('#discourse-modal').modal('show');
       flagController.displayErrors(errors);
     });
+  },
+
+  canDeleteSpammer: function() {
+    if (Discourse.User.currentProp('staff') && this.get('selected.name_key') === 'spam') {
+      return this.get('userDetails.can_be_deleted') && this.get('userDetails.can_delete_all_posts');
+    } else {
+      return false;
+    }
+  }.property('selected.name_key', 'userDetails.can_be_deleted', 'userDetails.can_delete_all_posts'),
+
+  deleteSpammer: function() {
+    this.send('closeModal');
+    this.get('userDetails').deleteAsSpammer(function() { window.location.reload(); });
+  },
+
+  usernameChanged: function() {
+    this.set('userDetails', null);
+    this.fetchUserDetails();
+  }.observes('username'),
+
+  fetchUserDetails: function() {
+    if( Discourse.User.currentProp('staff') && this.get('username') ) {
+      var flagController = this;
+      Discourse.AdminUser.find(this.get('username').toLowerCase()).then(function(user){
+        flagController.set('userDetails', user);
+      });
+    }
   }
 
 });
-
-

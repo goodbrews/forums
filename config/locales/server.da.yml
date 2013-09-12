@@ -76,7 +76,7 @@ da:
               cant_send_pm: "Beklager, du kan ikke sende en privat besked til den bruger."
 
   user_profile:
-    no_info_me: "<div class='missing-profile'>“Om mig” feltet på din profil er pt. tomt, <a href='/users/%{username_lower}/preferences'>ønsker du at udfylde det</a>?</div>"
+    no_info_me: "<div class='missing-profile'>“Om mig” feltet på din profil er pt. tomt, <a href='/users/%{username_lower}/preferences/about-me'>ønsker du at udfylde det</a>?</div>"
     no_info_other: "<div class='missing-profile'>%{name} har ikke skrevet noget i “Om mig”-feltet endnu</div>"
 
   category:
@@ -349,7 +349,7 @@ da:
     track_external_right_clicks: "Track external links that are right clicked (eg: open in new tab) disabled by default because it rewrites URLs"
     topics_per_page: "How many topics are loaded by default on the topics list page"
     posts_per_page: "How many posts are returned on a topic page"
-    system_username: "Username for the author of automated private messages sent by the forum"
+    site_contact_username: "Username for the author of automated private messages sent by the forum"
     send_welcome_message: "Do new users get a welcome private message?"
     suppress_reply_directly_below: "Don't show reply count on a post when there is a single reply directly below"
     allow_index_in_robots_txt: "Site should be indexed by search engines (update robots.txt)"
@@ -714,7 +714,7 @@ da:
         Klik her for at svare: %{base_url}%{url}
 
     user_posted:
-      subject_template: "[%{site_name}] %{username} skrev et indlæg i emnet '%{topic_title}'"
+      subject_template: "[%{site_name}] %{subject_prefix}%{username} skrev et indlæg i emnet '%{topic_title}'"
       text_body_template: |
         %{username} skrev et indlæg i emnet '%{topic_title}' på %{site_name}:
 
@@ -732,17 +732,6 @@ da:
       unsubscribe: "Denne opsummering sendes som en høflig notifikation fra %{site_link} når vi ikke har set dig et stykke tid.\nHvis du ønsker at slå den fra, eller ændre dine e-mail-indstillinger, %{unsubscribe_link}."
       click_here: "klik her"
       from: "%{site_name} opsummering"
-
-    private_message:
-      subject_template: "[%{site_name}] %{subject_prefix}%{topic_title}"
-      text_body_template: |
-        %{private_message_from} har sendt dig en privat besked
-
-        ---
-        %{message}
-
-        ---
-        Klik her for at svare: %{base_url}%{url}
 
     forgot_password:
       subject_template: "[%{site_name}] Nulstil kodeord"

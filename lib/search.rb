@@ -29,6 +29,7 @@ class Search
       when :nl then 'dutch'
       when :pt then 'portuguese'
       when :sv then 'swedish'
+      when :ru then 'russian'
       else 'simple' # use the 'simple' stemmer for other languages
     end
   end
@@ -114,6 +115,7 @@ class Search
     def category_search
       categories = Category.includes(:category_search_data)
                            .where("category_search_data.search_data @@ #{ts_query}")
+                           .references(:category_search_data)
                            .order("topics_month DESC")
                            .secured(@guardian)
                            .limit(@limit)
@@ -129,6 +131,7 @@ class Search
                   .order("CASE WHEN username_lower = '#{@original_term.downcase}' THEN 0 ELSE 1 END")
                   .order("last_posted_at DESC")
                   .limit(@limit)
+                  .references(:user_search_data)
 
       users.each do |u|
         @results.add_result(SearchResult.from_user(u))
@@ -141,6 +144,7 @@ class Search
                   .where("topics.deleted_at" => nil)
                   .where("topics.visible")
                   .where("topics.archetype <> ?", Archetype.private_message)
+                  .references(:post_search_data, {:topic => :category})
 
       # If we have a search context, prioritize those posts first
       if @search_context.present?
@@ -160,9 +164,9 @@ class Search
                    .order("topics.bumped_at DESC")
 
       if secure_category_ids.present?
-        posts = posts.where("(categories.id IS NULL) OR (NOT categories.read_restricted) OR (categories.id IN (?))", secure_category_ids)
+        posts = posts.where("(categories.id IS NULL) OR (NOT categories.read_restricted) OR (categories.id IN (?))", secure_category_ids).references(:categories)
       else
-        posts = posts.where("(categories.id IS NULL) OR (NOT categories.read_restricted)")
+        posts = posts.where("(categories.id IS NULL) OR (NOT categories.read_restricted)").references(:categories)
       end
       posts.limit(limit)
     end
@@ -173,8 +177,8 @@ class Search
 
     def ts_query
       @ts_query ||= begin
-        escaped_term = PG::Connection.escape_string(@term.gsub(/[:()&!]/,''))
-        query = Post.sanitize(escaped_term.split.map {|t| "#{t}:*"}.join(" & "))
+        all_terms = @term.gsub(/[:()&!'"]/,'').split
+        query = Post.sanitize(all_terms.map {|t| "#{PG::Connection.escape_string(t)}:*"}.join(" & "))
         "TO_TSQUERY(#{query_locale}, #{query})"
       end
     end
