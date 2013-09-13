@@ -29,7 +29,7 @@ config/database.yml
 config/redis.yml
 config/discourse.pill
 config/smtp.yml
-plugins/newrelic/newrelic.yml
+config/newrelic.yml
 
 # Ignore the default SQLite database and db dumps
 /db/*.sqlite3
