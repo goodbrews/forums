@@ -16,7 +16,8 @@ class UserHistory < ActiveRecord::Base
                            :change_site_customization,
                            :delete_site_customization,
                            :checked_for_custom_avatar,
-                           :notified_about_avatar)
+                           :notified_about_avatar,
+                           :notified_about_sequential_replies)
   end
 
   # Staff actions is a subset of all actions, used to audit actions taken by staff users.
@@ -44,6 +45,10 @@ class UserHistory < ActiveRecord::Base
     end
     query = query.where("subject = ?", filters[:subject]) if filters[:subject]
     query
+  end
+
+  def self.exists_for_user?(user, action_type)
+    self.where(target_user_id: user.id, action: UserHistory.actions[action_type]).exists?
   end
 
   def new_value_is_json?

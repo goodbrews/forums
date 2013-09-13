@@ -104,6 +104,22 @@ en:
 
       For more guidance, [see our FAQ](/faq). This panel will only appear for your first %{education_posts_text}.
 
+    avatar: |
+      ### How about a new picture for your account?
+
+      You've posted a few topics and replies, but your avatar isn't as unique as you are -- it's the same default avatar all new users have.
+
+      Have you considered **[visiting your user profile](%{profile_path})** and uploading a custom image that represents you?
+
+      It's easier to follow community discussions and find interesting people in conversations when everyone has a unique avatar!
+
+    sequential_replies: |
+      ### Consider replying to several posts at once
+
+      Rather than many sequential replies to a topic, please consider a single reply that includes quotes or @name references to previous posts.
+
+      It's easier for everyone to read topics that have fewer in-depth replies versus lots of small, individual replies.
+
 
   activerecord:
     attributes:
@@ -677,6 +693,7 @@ en:
     detect_custom_avatars: "Whether or not to check that users have uploaded custom avatars"
     max_daily_gravatar_crawls: "The maximum amount of times Discourse will check gravatar for custom avatars in a day"
 
+    sequential_replies_threshold: "The amount of posts a user has to make in a row in a topic before being notified"
 
   notification_types:
     mentioned: "%{display_username} mentioned you in %{link}"
@@ -938,18 +955,22 @@ en:
         For additional guidance, please refer to our [FAQ](%{base_url}/faq).
 
     user_automatically_blocked:
-      subject_template: "New user %{username} was automatically blocked"
+      subject_template: "New user %{username} blocked via flags"
       text_body_template: |
         This is an automated message to inform you that the new user [%{username}](%{user_url}) was automatically blocked because multiple users flagged %{username}'s post(s).
 
         Please [review the flags](/admin/flags). If %{username} was incorrectly blocked from posting, click the unblock button on [the admin page for this user](%{user_url}).
 
+        This threshold can be changed via the `block_new_user` site settings.
+
     spam_post_blocked:
-      subject_template: "New user %{username} is posting repeated links"
+      subject_template: "New user %{username} blocked for repeated links"
       text_body_template: |
-        This is an automated message to inform you that the new user [%{username}](%{user_url}) tried to create multiple posts with links to the same domain, but they were blocked based on the newuser_spam_host_threshold site setting.
+        This is an automated message to inform you that the new user [%{username}](%{user_url}) tried to create multiple posts with links to %{domains}, but they were blocked from further posting to avoid spam.
 
         Please [review the user](%{user_url}).
+
+        This threshold can be changed via the `newuser_spam_host_threshold` site setting.
 
     unblocked:
       subject_template: "Account unblocked"
