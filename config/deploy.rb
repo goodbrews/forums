@@ -26,6 +26,10 @@ role :app, 'forums.goodbre.ws', primary: true
 role :db,  'forums.goodbre.ws', primary: true
 role :web, 'forums.goodbre.ws', primary: true
 
+set default_environment: {
+  'RAILS4' => true
+}
+
 # Application Settings
 set :application, 'discourse'
 set :deploy_to, "/home/#{user}/#{application}"
@@ -57,19 +61,21 @@ namespace :deploy do
     run  "mkdir -p #{shared_path}/config/environments"
     run  "mkdir -p #{shared_path}/sockets"
     put  File.read("config/database.yml"), "#{shared_path}/config/database.yml"
-    put  File.read("config/newrelic.yml"), "#{shared_path}/config/newrelic.yml"
-    put  File.read("config/nginx.conf"),   "#{shared_path}/config/nginx.conf"
-    put  File.read("config/redis.yml"),    "#{shared_path}/config/redis.yml"
+    put  File.read("config/nginx.conf"), "#{shared_path}/config/nginx.conf"
+    put  File.read("config/redis.yml"), "#{shared_path}/config/redis.yml"
+    put  File.read("config/smtp.yml"), "#{shared_path}/config/smtp.yml"
     put  File.read("config/environments/production.rb"), "#{shared_path}/config/environments/production.rb"
     put  File.read("config/initializers/secret_token.rb"), "#{shared_path}/config/initializers/secret_token.rb"
+    put  File.read("plugins/newrelic/newrelic.yml"), "#{shared_path}/config/newrelic.yml"
     sudo "ln -nfs #{shared_path}/config/nginx.conf /etc/nginx/sites-enabled/#{application}"
     puts "Now edit the config files in #{shared_path}."
   end
 
   task :symlink_config, roles: :app do
     run  "ln -nfs #{shared_path}/config/database.yml #{release_path}/config/database.yml"
-    run  "ln -nfs #{shared_path}/config/newrelic.yml #{release_path}/config/newrelic.yml"
+    run  "ln -nfs #{shared_path}/config/newrelic.yml #{release_path}/plugins/newrelic/newrelic.yml"
     run  "ln -nfs #{shared_path}/config/redis.yml #{release_path}/config/redis.yml"
+    run  "ln -nfs #{shared_path}/config/smtp.yml #{release_path}/config/smtp.yml"
     run  "ln -nfs #{shared_path}/config/environments/production.rb #{release_path}/config/environments/production.rb"
     run  "ln -nfs #{shared_path}/config/initializers/secret_token.rb #{release_path}/config/initializers/secret_token.rb"
   end

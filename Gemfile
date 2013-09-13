@@ -119,7 +119,6 @@ gem 'highline', require: false
 
 gem 'capistrano', require: nil
 gem 'capistrano-rbenv', require: nil
-gem 'newrelic_rpm'
 
 # Gem that enables support for plugins. It is required.
 gem 'discourse_plugin', path: 'vendor/gems/discourse_plugin'
