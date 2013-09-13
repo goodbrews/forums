@@ -117,8 +117,11 @@ gem 'thin', require: false
 gem 'diffy', '>= 3.0', require: false
 gem 'highline', require: false
 
-gem 'capistrano', require: nil
-gem 'capistrano-rbenv', require: nil
+group :deployment do
+  gem 'capistrano', require: nil
+  gem 'capistrano-rbenv', require: nil
+end
+
 gem 'newrelic_rpm'
 
 # Gem that enables support for plugins. It is required.

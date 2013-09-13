@@ -81,8 +81,8 @@ namespace :deploy do
   end
 end
 
-after "deploy:setup", "deploy:setup_config"
-after "deploy:finalize_update", "deploy:symlink_config"
+after 'deploy:setup', 'deploy:setup_config'
+after 'deploy:finalize_update', "deploy:symlink_config'
 
-after  'deploy:update', 'newrelic:notice_deployment'
-after  'deploy:update_code', 'deploy:migrate'
+after 'deploy:update', 'newrelic:notice_deployment'
+after 'deploy:update_code', 'deploy:migrate'
