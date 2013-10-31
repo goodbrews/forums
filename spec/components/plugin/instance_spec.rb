@@ -7,7 +7,7 @@ describe Plugin::Instance do
     it "can find plugins correctly" do
       plugins = Plugin::Instance.find_all("#{Rails.root}/spec/fixtures/plugins")
       plugins.count.should == 1
-      plugin =plugins[0]
+      plugin = plugins[0]
 
       plugin.name.should == "plugin-name"
       plugin.path.should == "#{Rails.root}/spec/fixtures/plugins/my_plugin/plugin.rb"
@@ -34,7 +34,7 @@ describe Plugin::Instance do
       auth_provider.authenticator.name.should == 'ubuntu'
 
       # calls ensure_assets! make sure they are there
-      plugin.assets.count.should == 2
+      plugin.assets.count.should == 1
       plugin.assets.each do |a|
         File.exists?(a).should be_true
       end

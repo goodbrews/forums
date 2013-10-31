@@ -134,10 +134,11 @@ Install RVM
     # you've given discourse sudo permissions, which is *not* the default)
     # rvm requirements
 
-    # If discourse does not have sudo permissions (likely the case), run:
+    # NOTE: rvm will tell you which packages you (or your sysadmin) need
+    # to install during this step. As discourse does not have sudo 
+    # permissions (likely the case), run:
     rvm --autolibs=read-fail requirements
-    # and rvm will tell you which packages you (or your sysadmin) need
-    # to install before it can proceed. Do that and then resume next:
+    # repeat untill it fully executes 
 
 Continue with Discourse installation
 
@@ -199,8 +200,8 @@ Initialize the database:
     # The database name here should match the production one in database.yml
     cd /var/www/discourse
     createdb discourse_prod
-    RUBY_GC_MALLOC_LIMIT=90000000 RAILS_ENV=production rake db:migrate
-    RUBY_GC_MALLOC_LIMIT=90000000 RAILS_ENV=production rake assets:precompile
+    RUBY_GC_MALLOC_LIMIT=90000000 RAILS_ENV=production bundle exec rake db:migrate
+    RUBY_GC_MALLOC_LIMIT=90000000 RAILS_ENV=production bundle exec rake assets:precompile
 
 Not english? Set the default language as appropriate:
 
@@ -231,6 +232,7 @@ site:
 Edit /etc/nginx/conf.d/discourse.conf
 
 - edit `server_name`. Example: `server_name cain.discourse.org test.cain.discourse.org;`
+- change socket count depending on your NUM_WEB count
 - change socket paths if discourse is installed to a different location
 - modify root location if discourse is installed to a different location
 
@@ -268,7 +270,14 @@ Add the following lines:
     # Disabled for now - log rotation isn't *quite* complete
     #0 0 * * * /usr/sbin/logrotate /var/www/discourse/config/logrotate.conf
 
+## Email setup
+
+IMPORTANT: Discourse relies heavily on email. If your email configuration is not correct, you will effectively have a broken forum.
+Please, head over to our [Mail Setup Guide](https://github.com/discourse/discourse/blob/master/docs/INSTALL-email.md) to find out more information on how to properly setup emails.
+
 Congratulations! You've got Discourse installed and running!
+
+## Administrator account
 
 Now make yourself an administrator account. Browse to your discourse instance
 and create an account by logging in normally, then run the commands:
@@ -327,8 +336,8 @@ The corresponding site setting is:
     # "Check sample configuration files for new settings"
     #
     bundle install --without test --deployment
-    RUBY_GC_MALLOC_LIMIT=90000000 RAILS_ENV=production rake db:migrate
-    RUBY_GC_MALLOC_LIMIT=90000000 RAILS_ENV=production rake assets:precompile
+    RUBY_GC_MALLOC_LIMIT=90000000 RAILS_ENV=production bundle exec rake db:migrate
+    RUBY_GC_MALLOC_LIMIT=90000000 RAILS_ENV=production bundle exec rake assets:precompile
     # restart bluepill
     crontab -l
     # Here, run the command to start bluepill.

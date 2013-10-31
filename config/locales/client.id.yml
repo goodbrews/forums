@@ -312,10 +312,8 @@ id:
       title: "Insert Image"
       from_my_computer: "From My Device"
       from_the_web: "From The Web"
-      add_title: "Add Image"
       remote_tip: "enter address of an image in the form http://example.com/image.jpg"
       local_tip: "click to select an image from your device."
-      upload_title: "Upload"
       uploading: "Uploading image"
 
     search:
@@ -351,7 +349,6 @@ id:
         category: "There are no more {{category}} topics."
 
     topic:
-      create_in: 'Create {{categoryName}} Topic'
       create: 'Create Topic'
       create_long: 'Create a new Topic'
       private_message: 'Start a private message'
@@ -471,7 +468,7 @@ id:
 
       move_selected:
         title: "Move Selected Posts"
-        topic_name: "New Topic Name:"
+        topic_name: "New Topic Name"
         error: "Sorry, there was an error moving those posts."
         instructions:
           one: "You are about to create a new topic and populate it with the post you've selected."
@@ -641,7 +638,6 @@ id:
 
   # This section is exported to the javascript for i18n in the admin section
   admin_js:
-    type_to_filter: "type to filter..."
 
     admin:
       title: 'Discourse Admin'

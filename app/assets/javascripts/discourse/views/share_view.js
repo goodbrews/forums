@@ -45,7 +45,7 @@ Discourse.ShareView = Discourse.View.extend({
       // link is clicked (which is a click event) while the share dialog is showing.
       if (shareView.$().has(e.target).length !== 0) { return; }
 
-      shareView.get('controller').close();
+      shareView.get('controller').send('close');
       return true;
     });
 
@@ -60,14 +60,24 @@ Discourse.ShareView = Discourse.View.extend({
         url = window.location.protocol + "//" + window.location.host + url;
       }
 
-      var x = e.pageX - 150;
+      var shareLinkWidth = $('#share-link').width();
+      var x = e.pageX - (shareLinkWidth / 2);
       if (x < 25) {
         x = 25;
+      }
+      if (x + shareLinkWidth > $(window).width()) {
+        x -= shareLinkWidth / 2;
+      }
+
+      var header = $('.d-header');
+      var y = e.pageY - ($('#share-link').height() + 20);
+      if (y < header.offset().top + header.height()) {
+        y = e.pageY + 10;
       }
 
       $('#share-link').css({
         left: "" + x + "px",
-        top: "" + (e.pageY - 100) + "px"
+        top: "" + y + "px"
       });
       shareView.set('controller.link', url);
       shareView.set('controller.postNumber', postNumber);
@@ -76,7 +86,7 @@ Discourse.ShareView = Discourse.View.extend({
 
     $('html').on('keydown.share-view', function(e){
       if (e.keyCode === 27) {
-        shareView.get('controller').close();
+        shareView.get('controller').send('close');
       }
     });
   },

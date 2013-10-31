@@ -39,35 +39,47 @@ Discourse.AdminSiteSettingsController = Ember.ArrayController.extend(Discourse.P
     });
   }.property('filter', 'content.@each', 'onlyOverridden'),
 
-  /**
-    Reset a setting to its default value
+  actions: {
 
-    @method resetDefault
-    @param {Discourse.SiteSetting} setting The setting we want to revert
-  **/
-  resetDefault: function(setting) {
-    setting.set('value', setting.get('default'));
-    setting.save();
-  },
+    /**
+      Changes the currently active filter
 
-  /**
-    Save changes to a site setting
+      @method changeFilter
+    **/
+    changeFilter: function() {
+      this.set('filter', this.get('newFilter'));
+    },
 
-    @method save
-    @param {Discourse.SiteSetting} setting The setting we've changed
-  **/
-  save: function(setting) {
-    setting.save();
-  },
+    /**
+      Reset a setting to its default value
 
-  /**
-    Cancel changes to a site setting
+      @method resetDefault
+      @param {Discourse.SiteSetting} setting The setting we want to revert
+    **/
+    resetDefault: function(setting) {
+      setting.set('value', setting.get('default'));
+      setting.save();
+    },
 
-    @method cancel
-    @param {Discourse.SiteSetting} setting The setting we've changed but want to revert
-  **/
-  cancel: function(setting) {
-    setting.resetValue();
+    /**
+      Save changes to a site setting
+
+      @method save
+      @param {Discourse.SiteSetting} setting The setting we've changed
+    **/
+    save: function(setting) {
+      setting.save();
+    },
+
+    /**
+      Cancel changes to a site setting
+
+      @method cancel
+      @param {Discourse.SiteSetting} setting The setting we've changed but want to revert
+    **/
+    cancel: function(setting) {
+      setting.resetValue();
+    }
   }
 
 });

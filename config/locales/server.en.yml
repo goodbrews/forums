@@ -118,8 +118,16 @@ en:
 
       Rather than many sequential replies to a topic, please consider a single reply that includes quotes or @name references to previous posts.
 
+      You can edit your previous reply to add a quote by highlighting text and selecting the <b>quote reply</b> button that appears.
+
       It's easier for everyone to read topics that have fewer in-depth replies versus lots of small, individual replies.
 
+    dominating_topic: |
+      ### Let others join the conversation
+
+      This topic is clearly important to you &ndash; you've posted more than %{percent}% of the replies here.
+
+      Are you sure you're providing adequate time for other people to share their points of view, too?
 
   activerecord:
     attributes:
@@ -127,6 +135,8 @@ en:
         name: "Category Name"
       post:
         raw: "Body"
+      user:
+        ip_address: ""
     errors:
       messages:
         is_invalid: "is invalid; try to be a little more descriptive"
@@ -136,6 +146,10 @@ en:
           attributes:
             archetype:
               cant_send_pm: "Sorry, you cannot send a private message to that user."
+        user:
+          attributes:
+            ip_address:
+              signup_not_allowed: "Signup is not allowed from this account."
 
   user_profile:
     no_info_me: "<div class='missing-profile'>the About Me field of your profile is currently blank, <a href='/users/%{username_lower}/preferences/about-me'>would you like to fill it out?</a></div>"
@@ -145,7 +159,9 @@ en:
     topic_prefix: "Category definition for %{category}"
     replace_paragraph: "[Replace this first paragraph with a short description of your new category. This guidance will appear in the category selection area, so try to keep it below 200 characters.]"
     post_template: "%{replace_paragraph}\n\nUse the following paragraphs for a longer description, as well as to establish any category guidelines or rules.\n\nSome things to consider in any discussion replies below:\n\n- What is this category for? Why should people select this category for their topic?\n\n- How is this different than the other categories we already have?\n\n- Do we need this category?\n\n- Should we merge this with another category, or split it into more categories?\n"
-
+    errors:
+      self_parent: "A subcategory's parent cannot be itself."
+      depth: "You can't nest a subcategory under another."
   trust_levels:
     newuser:
       title: "new user"
@@ -276,7 +292,7 @@ en:
       long_form: 'flagged this as spam'
     inappropriate:
       title: 'Inappropriate'
-      description: 'This post contains content that a reasonable person would consider offensive, abusive, or hate speech.'
+      description: 'This post contains content that a reasonable person would consider offensive, abusive, or a violation of <a href="/faq">our community guidelines</a>.'
       long_form: 'flagged this as inappropriate'
     notify_user:
       title: 'Notify {{username}}'
@@ -402,6 +418,7 @@ en:
 
   dashboard:
     rails_env_warning: "Your server is running in %{env} mode."
+    ruby_version_warning: "You are running a version of Ruby 2.0.0 that is known to have problems. Upgrade to patch level 247 or later."
     host_names_warning: "Your config/database.yml file is using the default localhost hostname. Update it to use your site's hostname."
     gc_warning: 'Your server is using default ruby garbage collection parameters, which will not give you the best performance. Read this topic on performance tuning: <a href="http://meta.discourse.org/t/tuning-ruby-and-rails-for-discourse/4126" target="_blank">Tuning Ruby and Rails for Discourse</a>.'
     sidekiq_warning: 'Sidekiq is not running. Many tasks, like sending emails, are executed asynchronously by sidekiq. Please ensure at least one sidekiq process is running. <a href="https://github.com/mperham/sidekiq" target="_blank">Learn about Sidekiq here</a>.'
@@ -481,7 +498,6 @@ en:
     company_full_name: "The full name of the company that runs this site, used in legal documents like the /tos"
     company_short_name: "The short name of the company that runs this site, used in legal documents like the /tos"
     company_domain: "The domain name owned by the company that runs this site, used in legal documents like the /tos"
-    api_key: "The secure API key used to create and update topics, use the /admin/api section to set it up"
     queue_jobs: "DEVELOPER ONLY! WARNING! By default, queue jobs in sidekiq. If disabled, your site will be broken."
     crawl_images: "Enable retrieving images from third party sources to insert width and height dimensions"
     ninja_edit_window: "Number of seconds after posting where edits do not create a new version"
@@ -522,9 +538,14 @@ en:
 
     flags_required_to_hide_post: "Number of flags that cause a post to be automatically hidden and PM sent to the user (0 for never)"
     cooldown_minutes_after_hiding_posts: "Number of minutes a user must wait before they can edit a post hidden via flagging"
+
+    max_topics_in_first_day: "The maximum number of topics a user is alowed to create in thier first day on the site"
+    max_replies_in_first_day: "The maximum number of replies a user is alowed to create in thier first day on the site"
+
     num_flags_to_block_new_user: "If a new user's posts get this many spam flags from (n) different users, hide all their posts and prevent future posting. 0 disables this feature."
     num_users_to_block_new_user: "If a new user's posts get (x) spam flags from this many different users, hide all their posts and prevent future posting. 0 disables this feature."
     notify_mods_when_user_blocked: "If a user is automatically blocked, send a message to all moderators."
+    flag_sockpuppets: "If a new user (i.e., registered in the last 24 hours) who started a topic and a new user who replies in that topic are at the same IP address, both their posts will automatically be flagged as spam."
 
     traditional_markdown_linebreaks: "Use traditional linebreaks in Markdown, which require two trailing spaces for a linebreak"
     post_undo_action_window_mins: "Number of seconds users are allowed to reverse actions on a post (like, flag, etc)"
@@ -589,10 +610,6 @@ en:
     active_user_rate_limit_secs: "How frequently we update the 'last_seen_at' field, in seconds"
     previous_visit_timeout_hours: "How long a visit lasts before we consider it the 'previous' visit, in hours"
 
-    uncategorized_name: "The default category for topics that have no category in the /categories page"
-    uncategorized_color: "The background color of the uncategorized topics category"
-    uncategorized_text_color: "The text color of the uncategorized topics category"
-
     rate_limit_create_topic: "After creating a topic, users must wait this many seconds before they can create another topic"
     rate_limit_create_post: "After posting, users must wait this many seconds before they can create another post"
 
@@ -606,6 +623,8 @@ en:
 
     suggested_topics: "Number of suggested topics shown at the bottom of a topic"
 
+    clean_up_uploads: "Remove orphaned uploads to prevent illegal hosting. WARNING: you might want to make a backup of your /uploads directory before enabled this setting."
+    uploads_grace_period_in_hours: "Grace period (in hours) before an orphan upload is removed."
     enable_s3_uploads: "Place uploads on Amazon S3"
     s3_upload_bucket: "The Amazon S3 bucket name that files will be uploaded into. WARNING: must be lowercase (cf. http://docs.aws.amazon.com/AmazonS3/latest/dev/BucketRestrictions.html)"
     s3_access_key_id: "The Amazon S3 access key id that will be used to upload images"
@@ -652,6 +671,8 @@ en:
     min_body_similar_length: "The minimum length of a post's body before it will be checked for similar topics"
 
     category_colors: "A pipe (|) separated list of hexadecimal color values allowed for categories"
+    enable_wide_category_list: "Enable traditional full width, non-tiling, category list"
+
     max_image_size_kb: "The maximum size of images we allow users to upload in kB - configure the limit in nginx (client_max_body_size) / apache or proxy as well."
     max_attachment_size_kb: "The maximum size of files we allow users to upload in kB - configure the limit in nginx (client_max_body_size) / apache or proxy as well."
     authorized_extensions: "A pipe (|) separated list of file extensions allowed for upload"
@@ -684,7 +705,8 @@ en:
     relative_date_duration: "Number of days after posting where post dates will be shown as relative instead of absolute. Examples: relative date: 7d, absolute date: 20 Feb"
     delete_user_max_age: "The maximum age of a user, in days, which can be deleted by an admin."
     delete_all_posts_max: "The maximum number of posts that can be deleted at once with the Delete All Posts button. If a user has more than this many posts, the posts cannot all be deleted at once and the user can't be deleted."
-    username_change_period: "The number of days after registration that accounts can change their username."
+    username_change_period: "The number of days after registration that accounts can change their username (0 to disallow username change)."
+    email_editable: "Allow users to change their e-mail address after registration."
 
     allow_uploaded_avatars: "Allow users to upload their custom avatars"
     allow_animated_avatars: "Allow users to use animated gif for avatars. WARNING: it is highly recommended to run the avatars:regenerate rake task after changing that setting."
@@ -694,6 +716,12 @@ en:
     max_daily_gravatar_crawls: "The maximum amount of times Discourse will check gravatar for custom avatars in a day"
 
     sequential_replies_threshold: "The amount of posts a user has to make in a row in a topic before being notified"
+
+    enable_mobile_theme: "Mobile devices use a mobile-friendly theme, with the ability to switch to the full site. Disable this if you want to use a custom stylesheet that is fully responsive."
+
+    dominating_topic_minimum_percent: "What percentage of posts a user has to make in a topic before we consider it dominating."
+
+    enable_names: "Allow users to show their full names"
 
   notification_types:
     mentioned: "%{display_username} mentioned you in %{link}"
@@ -766,6 +794,8 @@ en:
     email:
       not_allowed: "is not allowed from that email provider. Please use another email address."
       blocked: "is not allowed."
+    ip_address:
+      blocked: "is blocked."
 
   invite_mailer:
     subject_template: "[%{site_name}] %{invitee_name} invited you to join a discussion on %{site_name}"
@@ -957,18 +987,18 @@ en:
     user_automatically_blocked:
       subject_template: "New user %{username} blocked via flags"
       text_body_template: |
-        This is an automated message to inform you that the new user [%{username}](%{user_url}) was automatically blocked because multiple users flagged %{username}'s post(s).
+        This is an automated message to inform you that the new user [%{username}](%{base_url}%{user_url}) was automatically blocked because multiple users flagged %{username}'s post(s).
 
-        Please [review the flags](/admin/flags). If %{username} was incorrectly blocked from posting, click the unblock button on [the admin page for this user](%{user_url}).
+        Please [review the flags](%{base_url}/admin/flags). If %{username} was incorrectly blocked from posting, click the unblock button on [the admin page for this user](%{base_url}%{user_url}).
 
         This threshold can be changed via the `block_new_user` site settings.
 
     spam_post_blocked:
-      subject_template: "New user %{username} blocked for repeated links"
+      subject_template: "New user %{username} posts blocked for repeated links"
       text_body_template: |
-        This is an automated message to inform you that the new user [%{username}](%{user_url}) tried to create multiple posts with links to %{domains}, but they were blocked from further posting to avoid spam.
+        This is an automated message to inform you that the new user [%{username}](%{base_url}%{user_url}) tried to create multiple posts with links to %{domains}, but those posts were blocked to avoid spam. The user is still able to create new posts that do not link to %{domains}.
 
-        Please [review the user](%{user_url}).
+        Please [review the user](%{base_url}%{user_url}).
 
         This threshold can be changed via the `newuser_spam_host_threshold` site setting.
 
@@ -1139,3 +1169,8 @@ en:
       fetch_failure: "Sorry, there has been an error while fetching the image."
       unknown_image_type: "Sorry, but the file you tried to upload doesn't appear to be an image."
       size_not_found: "Sorry, but we couldn't determine the size of the image. Maybe your image is corrupted?"
+
+  flag_reason:
+    sockpuppet: "A new user created a topic, and another new user at the same IP address replied. See the flag_sockpuppets site setting."
+    spam_hosts: "This user tried to create multiple posts with links to the same domain. See the newuser_spam_host_threshold site setting."
+

@@ -10,6 +10,7 @@ class UserSerializer < BasicUserSerializer
              :website,
              :can_edit,
              :can_edit_username,
+             :can_edit_email,
              :stats,
              :can_send_private_message_to_user,
              :bio_excerpt,
@@ -46,6 +47,7 @@ class UserSerializer < BasicUserSerializer
                      :email_digests,
                      :email_private_messages,
                      :email_direct,
+                     :email_always,
                      :digest_after_days,
                      :auto_track_topics_after_msecs,
                      :new_topic_duration_minutes,
@@ -78,12 +80,20 @@ class UserSerializer < BasicUserSerializer
     scope.can_edit_username?(object)
   end
 
+  def can_edit_email
+    scope.can_edit_email?(object)
+  end
+
   def stats
     UserAction.stats(object.id, scope)
   end
 
   def gravatar_template
     User.gravatar_template(object.email)
+  end
+
+  def include_name?
+    SiteSetting.enable_names?
   end
 
 end

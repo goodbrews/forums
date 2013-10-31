@@ -4,6 +4,16 @@
 @import "common/foundation/helpers";
 
 
+
+
+.admin-contents table {
+width: 100%;
+tr {text-align: left;}
+td, th {padding: 8px;}
+th {border-top: 1px solid #ddd;}
+td {border-bottom: 1px solid #ddd; border-top: 1px solid #ddd;}
+}
+
 .content-list li a span.count {
   font-size: 12px;
   float: right;
@@ -72,7 +82,7 @@
   @include border-radius-all(5px);
   background-color: darken($white, 5%);
   border: 1px solid darken($white, 10%);
-  padding: 5px 10px 3px 0px;
+  padding: 10px 10px 3px 0px;
   margin-bottom: 20px;
   height: 35px;
   .nav.nav-pills {
@@ -92,11 +102,15 @@
     color: $darkish_gray;
   }
   .controls {
-    padding-top: 3px;
+    margin-left: 10px;
   }
   button {
-    float: left;
     margin-right: 5px;
+    margin-left: 5px;
+  }
+  input[type=text] {
+    display: inline-block;
+    float: left;
   }
   .result-message {
     display: inline-block;
@@ -206,6 +220,17 @@ table {
     float: left;
     margin-left: 12px;
   }
+  .long-value {
+    width: 800px;
+    float: left;
+    margin-left: 12px;
+    font-size: 13px;
+
+    button {
+      margin-left: 10px;
+    }
+  }
+
   .controls {
     .btn {
       margin-right: 5px;
@@ -371,6 +396,24 @@ table {
 .update-nag {
   i.icon {
     font-size: 20px;
+  }
+}
+
+table.api-keys {
+  margin-top: 10px;
+  width: 100%;
+
+  th {
+    text-align: left;
+    padding: 5px;
+  }
+
+  td {
+    padding: 5px;
+  }
+
+  td.key {
+    font-size: 12px;
   }
 }
 
@@ -700,14 +743,56 @@ table {
 
 // Logs
 
-.screened-emails, .screened-urls {
-  width: 900px;
+.admin-logs-table {
+  input.ember-text-field {
+    padding: 1px 4px;
+  }
+  .btn {
+    padding: 2px 8px;
+    .icon {
+      margin-right: 2px;
+    }
+  }
+}
+
+.screened-emails, .screened-urls, .screened-ip-addresses {
   .email, .url {
     width: 300px;
   }
-  .action, .match_count, .last_match_at, .created_at, .ip_address {
+  .action, .match_count, .last_match_at, .created_at {
+    text-align: center;
+    width: 110px;
+  }
+}
+
+.screened-ip-address-form {
+  margin-left: 6px;
+  .combobox {
+    width: 130px;
+    top: 10px;
+  }
+}
+
+.screened-emails, .screened-urls {
+  .ip_address {
     width: 110px;
     text-align: center;
+  }
+}
+.screened-ip-addresses {
+  .ip_address {
+    width: 150px;
+    text-align: left;
+    input {
+      width: 130px;
+    }
+  }
+  .col.actions {
+    width: 275px;
+    padding-top: 4px;
+    a {
+      text-decoration: underline;
+    }
   }
 }
 
@@ -764,7 +849,7 @@ table {
 }
 
 .staff-action-logs-instructions {
-  margin: 50px 0 0 10px;
+  margin: 0 0 10px 10px;
 }
 
 // Ember.ListView
@@ -778,7 +863,7 @@ table {
   position: absolute;
 }
 
-.staff-actions, .screened-emails, .screened-urls {
+.staff-actions, .screened-emails, .screened-urls, .screened-ip-addresses {
   margin-left: 5px;
   border-bottom: dotted 1px #ddd;
 

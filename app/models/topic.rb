@@ -56,6 +56,14 @@ class Topic < ActiveRecord::Base
                                         :case_sensitive => false,
                                         :collection => Proc.new{ Topic.listable_topics } }
 
+  validates :category_id, :presence => true ,:exclusion => {:in => [SiteSetting.uncategorized_category_id]},
+                                     :if => Proc.new { |t|
+                                           (t.new_record? || t.category_id_changed?) &&
+                                           !SiteSetting.allow_uncategorized_topics &&
+                                           (t.archetype.nil? || t.archetype == Archetype.default)
+                                       }
+
+
   before_validation do
     self.sanitize_title
     self.title = TextCleaner.clean_title(TextSentinel.title_sentinel(title).text) if errors[:title].empty?
@@ -92,13 +100,14 @@ class Topic < ActiveRecord::Base
   attr_accessor :user_data
   attr_accessor :posters  # TODO: can replace with posters_summary once we remove old list code
   attr_accessor :topic_list
+  attr_accessor :include_last_poster
 
   # The regular order
   scope :topic_list_order, lambda { order('topics.bumped_at desc') }
 
   # Return private message topics
   scope :private_messages, lambda {
-    where(archetype: Archetype::private_message)
+    where(archetype: Archetype.private_message)
   }
 
   scope :listable_topics, lambda { where('topics.archetype <> ?', [Archetype.private_message]) }
@@ -140,7 +149,11 @@ class Topic < ActiveRecord::Base
     end
   end
 
+  attr_accessor :skip_callbacks
+
   after_create do
+    return if skip_callbacks
+
     changed_to_category(category)
     if archetype == Archetype.private_message
       DraftSequence.next!(user, Draft::NEW_PRIVATE_MESSAGE)
@@ -150,17 +163,28 @@ class Topic < ActiveRecord::Base
   end
 
   before_save do
+    return if skip_callbacks
+
     if (auto_close_at_changed? and !auto_close_at_was.nil?) or (auto_close_user_id_changed? and auto_close_at)
       self.auto_close_started_at ||= Time.zone.now if auto_close_at
       Jobs.cancel_scheduled_job(:close_topic, {topic_id: id})
       true
     end
+    if category_id.nil? && (archetype.nil? || archetype == Archetype.default)
+      self.category_id = SiteSetting.uncategorized_category_id
+    end
   end
 
   after_save do
+    return if skip_callbacks
+
     if auto_close_at and (auto_close_at_changed? or auto_close_user_id_changed?)
       Jobs.enqueue_at(auto_close_at, :close_topic, {topic_id: id, user_id: auto_close_user_id || user_id})
     end
+  end
+
+  def self.count_exceeds_minimum?
+    count > SiteSetting.minimum_topics_similar
   end
 
   def best_post
@@ -175,12 +199,13 @@ class Topic < ActiveRecord::Base
 
   # Additional rate limits on topics: per day and private messages per day
   def limit_topics_per_day
-    RateLimiter.new(user, "topics-per-day:#{Date.today.to_s}", SiteSetting.max_topics_per_day, 1.day.to_i)
+    apply_per_day_rate_limit_for("topics", :max_topics_per_day)
+    limit_first_day_topics_per_day if user.added_a_day_ago?
   end
 
   def limit_private_messages_per_day
     return unless private_message?
-    RateLimiter.new(user, "pms-per-day:#{Date.today.to_s}", SiteSetting.max_private_messages_per_day, 1.day.to_i)
+    apply_per_day_rate_limit_for("pms", :max_private_messages_per_day)
   end
 
   def fancy_title
@@ -311,13 +336,11 @@ class Topic < ActiveRecord::Base
                     FROM posts
                     WHERE avg_time > 0 AND avg_time IS NOT NULL
                     GROUP BY topic_id) AS x
-              WHERE x.topic_id = topics.id")
+              WHERE x.topic_id = topics.id AND (topics.avg_time <> x.gmean OR topics.avg_time IS NULL)")
   end
 
   def changed_to_category(cat)
-
-    return if cat.blank?
-    return if Category.where(topic_id: id).first.present?
+    return true if cat.blank? || Category.where(topic_id: id).first.present?
 
     Topic.transaction do
       old_category = category
@@ -326,13 +349,21 @@ class Topic < ActiveRecord::Base
         Category.where(['id = ?', category_id]).update_all 'topic_count = topic_count - 1'
       end
 
-      self.category_id = cat.id
-      save
+      success = true
+      if self.category_id != cat.id
+        self.category_id = cat.id
+        success = save
+      end
 
-      CategoryFeaturedTopic.feature_topics_for(old_category)
-      Category.where(id: cat.id).update_all 'topic_count = topic_count + 1'
-      CategoryFeaturedTopic.feature_topics_for(cat) unless old_category.try(:id) == cat.try(:id)
+      if success
+        CategoryFeaturedTopic.feature_topics_for(old_category)
+        Category.where(id: cat.id).update_all 'topic_count = topic_count + 1'
+        CategoryFeaturedTopic.feature_topics_for(cat) unless old_category.try(:id) == cat.try(:id)
+      else
+        return false
+      end
     end
+    true
   end
 
   def add_moderator_post(user, text, opts={})
@@ -364,17 +395,13 @@ class Topic < ActiveRecord::Base
   def change_category(name)
     # If the category name is blank, reset the attribute
     if name.blank?
-      if category_id.present?
-        CategoryFeaturedTopic.feature_topics_for(category)
-        Category.where(id: category_id).update_all 'topic_count = topic_count - 1'
-      end
-      self.category_id = nil
-      save
-      return
+      cat = Category.where(id: SiteSetting.uncategorized_category_id).first
+    else
+      cat = Category.where(name: name).first
     end
 
-    cat = Category.where(name: name).first
-    return if cat == category
+    return true if cat == category
+    return false unless cat
     changed_to_category(cat)
   end
 
@@ -382,7 +409,12 @@ class Topic < ActiveRecord::Base
   def remove_allowed_user(username)
     user = User.where(username: username).first
     if user
-      topic_allowed_users.where(user_id: user.id).first.destroy
+      topic_user = topic_allowed_users.where(user_id: user.id).first
+      if topic_user
+        topic_user.destroy
+      else
+        false
+      end
     end
   end
 
@@ -421,11 +453,7 @@ class Topic < ActiveRecord::Base
       invite = Invite.create(invited_by: invited_by, email: lower_email)
       unless invite.valid?
 
-        # If the email already exists, grant permission to that user
-        if invite.email_already_exists and private_message?
-          user = User.where(email: lower_email).first
-          topic_allowed_users.create!(user_id: user.id)
-        end
+        grant_permission_to_user(lower_email) if email_already_exists_for?(invite)
 
         return
       end
@@ -439,6 +467,15 @@ class Topic < ActiveRecord::Base
     invite
   end
 
+  def email_already_exists_for?(invite)
+    invite.email_already_exists and private_message?
+  end
+
+  def grant_permission_to_user(lower_email)
+    user = User.where(email: lower_email).first
+    topic_allowed_users.create!(user_id: user.id)
+  end
+
   def max_post_number
     posts.maximum(:post_number).to_i
   end
@@ -449,7 +486,7 @@ class Topic < ActiveRecord::Base
     if opts[:destination_topic_id]
       post_mover.to_topic opts[:destination_topic_id]
     elsif opts[:title]
-      post_mover.to_new_topic opts[:title]
+      post_mover.to_new_topic(opts[:title], opts[:category_id])
     end
   end
 
@@ -596,11 +633,19 @@ class Topic < ActiveRecord::Base
 
   private
 
-    def update_category_topic_count_by(num)
-      if category_id.present?
-        Category.where(['id = ?', category_id]).update_all("topic_count = topic_count " + (num > 0 ? '+' : '') + "#{num}")
-      end
+  def update_category_topic_count_by(num)
+    if category_id.present?
+      Category.where(['id = ?', category_id]).update_all("topic_count = topic_count " + (num > 0 ? '+' : '') + "#{num}")
     end
+  end
+
+  def limit_first_day_topics_per_day
+    apply_per_day_rate_limit_for("first-day-topics", :max_topics_in_first_day)
+  end
+
+  def apply_per_day_rate_limit_for(key, method_name)
+    RateLimiter.new(user, "#{key}-per-day:#{Date.today.to_s}", SiteSetting.send(method_name), 1.day.to_i)
+  end
 
 end
 
@@ -658,7 +703,9 @@ end
 #
 # Indexes
 #
-#  idx_topics_user_id_deleted_at     (user_id)
-#  index_forum_threads_on_bumped_at  (bumped_at)
+#  idx_topics_user_id_deleted_at                                (user_id)
+#  index_forum_threads_on_bumped_at                             (bumped_at)
+#  index_topics_on_deleted_at_and_visible_and_archetype_and_id  (deleted_at,visible,archetype,id)
+#  index_topics_on_id_and_deleted_at                            (id,deleted_at)
 #
 

@@ -477,12 +477,8 @@ zh_TW:
       title: "插入圖片"
       from_my_computer: "來自我的設備"
       from_the_web: "來自網絡"
-      add_title: "添加圖片"
-      remote_title: "網絡圖片"
       remote_tip: "輸入圖片網絡，格式爲：http://example.com/image.jpg"
-      local_title: "本地圖片"
       local_tip: "點擊從你的設備中選擇一張圖片。"
-      upload_title: "上傳"
       uploading: "上傳圖片中"
 
     search:
@@ -531,7 +527,6 @@ zh_TW:
       title: 主題排名詳細
 
     topic:
-      create_in: '創建一個 {{categoryName}} 分類的主題'
       create: '創建主題'
       create_long: '創建一個新主題'
       private_message: '開啓一段私下交流'
@@ -848,7 +843,6 @@ zh_TW:
       none: '（未分類）'
       edit: '編輯'
       edit_long: "編輯分類"
-      edit_uncategorized: "編輯未分類的"
       view: '浏覽分類下的主題'
       general: '通常'
       settings: '設置'
@@ -974,7 +968,6 @@ zh_TW:
       readonly: "觀看"
   # This section is exported to the javascript for i18n in the admin section
   admin_js:
-    type_to_filter: "輸入過濾條件……"
 
     admin:
       title: '論道 管理'

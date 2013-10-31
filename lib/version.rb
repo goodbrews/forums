@@ -4,8 +4,8 @@ module Discourse
     module VERSION #:nodoc:
       MAJOR = 0
       MINOR = 9
-      TINY  = 6
-      PRE   = 3
+      TINY  = 7
+      PRE   = 2
 
       STRING = [MAJOR, MINOR, TINY, PRE].compact.join('.')
     end

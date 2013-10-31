@@ -20,6 +20,18 @@ Discourse.ComposerMessagesController = Ember.ArrayController.extend({
     this.reset();
   },
 
+  actions: {
+    /**
+      Closes and hides a message.
+
+      @method closeMessage
+      @params {Object} message The message to dismiss
+    **/
+    closeMessage: function(message) {
+      this.removeObject(message);
+    }
+  },
+
   /**
     Displays a new message
 
@@ -35,16 +47,6 @@ Discourse.ComposerMessagesController = Ember.ArrayController.extend({
       this.pushObject(msg);
       messagesByTemplate[templateName] = msg;
     }
-  },
-
-  /**
-    Closes and hides a message.
-
-    @method closeMessage
-    @params {Object} message The message to dismiss
-  **/
-  closeMessage: function(message) {
-    this.removeObject(message);
   },
 
   /**
@@ -87,7 +89,6 @@ Discourse.ComposerMessagesController = Ember.ArrayController.extend({
     Discourse.ComposerMessage.find(composer).then(function (messages) {
       self.set('checkedMessages', true);
       messages.forEach(function (msg) {
-        console.log(msg);
         if (msg.wait_for_typing) {
           queuedForTyping.addObject(msg);
         } else {

@@ -25,6 +25,10 @@ Discourse.MergeTopicController = Discourse.ObjectController.extend(Discourse.Sel
     return I18n.t('topic.merge_topic.title');
   }.property('saving'),
 
+  onShow: function() {
+    this.set('controllers.modal.modalClass', 'split-modal');
+  },
+
   movePostsToExistingTopic: function() {
     this.set('saving', true);
 
@@ -46,7 +50,7 @@ Discourse.MergeTopicController = Discourse.ObjectController.extend(Discourse.Sel
     promise.then(function(result) {
       // Posts moved
       mergeTopicController.send('closeModal');
-      mergeTopicController.get('topicController').toggleMultiSelect();
+      mergeTopicController.get('topicController').send('toggleMultiSelect');
       Em.run.next(function() { Discourse.URL.routeTo(result.url); });
     }, function() {
       // Error moving posts

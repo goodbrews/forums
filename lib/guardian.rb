@@ -252,7 +252,7 @@ class Guardian
   end
 
   def can_create_post?(parent)
-    !SpamRulesEnforcer.block?(@user) && (
+    !SpamRule::AutoBlock.block?(@user) && (
       !parent ||
       !parent.category ||
       Category.post_create_allowed(self).where(:id => parent.category.id).count == 1
@@ -285,7 +285,15 @@ class Guardian
   end
 
   def can_edit_username?(user)
-    is_staff? || (is_me?(user) && (user.post_count == 0 || user.created_at > SiteSetting.username_change_period.days.ago))
+    return true if is_staff?
+    return false if SiteSetting.username_change_period <= 0
+    is_me?(user) && (user.post_count == 0 || user.created_at > SiteSetting.username_change_period.days.ago)
+  end
+
+  def can_edit_email?(user)
+    return true if is_staff?
+    return false unless SiteSetting.email_editable?
+    can_edit?(user)
   end
 
   # Deleting Methods
@@ -417,10 +425,13 @@ class Guardian
   private
 
   def is_my_own?(obj)
-    @user.present? &&
-    (obj.respond_to?(:user) || obj.respond_to?(:user_id)) &&
-    (obj.respond_to?(:user) ? obj.user == @user : true) &&
-    (obj.respond_to?(:user_id) ? (obj.user_id == @user.id) : true)
+
+    unless anonymous?
+      return obj.user_id == @user.id if obj.respond_to?(:user_id) && obj.user_id && @user.id
+      return obj.user == @user if obj.respond_to?(:user)
+    end
+
+    false
   end
 
   def is_me?(other)

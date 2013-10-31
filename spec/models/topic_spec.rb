@@ -171,8 +171,43 @@ describe Topic do
         topic.fancy_title.should == "&ldquo;this topic&rdquo; &ndash; has &ldquo;fancy stuff&rdquo;"
       end
     end
+  end
 
+  context 'category validation' do
+    context 'allow_uncategorized_topics is false' do
+      before do
+        SiteSetting.stubs(:allow_uncategorized_topics).returns(false)
+      end
 
+      it "does not allow nil category" do
+        topic = Fabricate.build(:topic, category: nil)
+        topic.should_not be_valid
+        topic.errors[:category_id].should be_present
+      end
+
+      it "allows PMs" do
+        topic = Fabricate.build(:topic, category: nil, archetype: Archetype.private_message)
+        topic.should be_valid
+      end
+
+      it 'passes for topics with a category' do
+        Fabricate.build(:topic, category: Fabricate(:category)).should be_valid
+      end
+    end
+
+    context 'allow_uncategorized_topics is true' do
+      before do
+        SiteSetting.stubs(:allow_uncategorized_topics).returns(true)
+      end
+
+      it "passes for topics with nil category" do
+        Fabricate.build(:topic, category: nil).should be_valid
+      end
+
+      it 'passes for topics with a category' do
+        Fabricate.build(:topic, category: Fabricate(:category)).should be_valid
+      end
+    end
   end
 
 
@@ -533,10 +568,9 @@ describe Topic do
     shared_examples_for "adding a star to a topic" do
       it 'triggers a forum topic user change with true' do
         # otherwise no chance the mock will work
-        freeze_time do
-          TopicUser.expects(:change).with(@user, @topic.id, starred: true, starred_at: DateTime.now, unstarred_at: nil)
-          @topic.toggle_star(@user, true)
-        end
+        freeze_time
+        TopicUser.expects(:change).with(@user, @topic.id, starred: true, starred_at: DateTime.now, unstarred_at: nil)
+        @topic.toggle_star(@user, true)
       end
 
       it 'increases the star_count of the forum topic' do
@@ -571,10 +605,9 @@ describe Topic do
       end
 
       it 'triggers a forum topic user change with false' do
-        freeze_time do
-          TopicUser.expects(:change).with(@user, @topic.id, starred: false, unstarred_at: DateTime.now)
-          @topic.toggle_star(@user, false)
-        end
+        freeze_time
+        TopicUser.expects(:change).with(@user, @topic.id, starred: false, unstarred_at: DateTime.now)
+        @topic.toggle_star(@user, false)
       end
 
       it 'reduces the star_count' do
@@ -766,7 +799,7 @@ describe Topic do
     describe 'without a previous category' do
 
       it 'should not change the topic_count when not changed' do
-       lambda { @topic.change_category(nil); @category.reload }.should_not change(@category, :topic_count)
+       lambda { @topic.change_category(@topic.category.name); @category.reload }.should_not change(@category, :topic_count)
       end
 
       describe 'changed category' do
@@ -782,10 +815,9 @@ describe Topic do
 
       end
 
-
       it "doesn't change the category when it can't be found" do
         @topic.change_category('made up')
-        @topic.category.should be_blank
+        @topic.category_id.should == SiteSetting.uncategorized_category_id
       end
     end
 
@@ -825,7 +857,18 @@ describe Topic do
         it "should lower the original category's topic count" do
           @category.topic_count.should == 0
         end
+      end
 
+      context 'when allow_uncategorized_topics is false' do
+        before do
+          SiteSetting.stubs(:allow_uncategorized_topics).returns(false)
+        end
+
+        let!(:topic) { Fabricate(:topic, category: Fabricate(:category)) }
+
+        it 'returns false' do
+          topic.change_category('').should eq(false) # don't use "be_false" here because it would also match nil
+        end
       end
 
       describe 'when the category exists' do
@@ -835,10 +878,9 @@ describe Topic do
         end
 
         it "resets the category" do
-          @topic.category_id.should be_blank
+          @topic.category_id.should == SiteSetting.uncategorized_category_id
           @category.topic_count.should == 0
         end
-
       end
 
     end
@@ -915,7 +957,7 @@ describe Topic do
         it "ignores the category's default auto-close" do
           Timecop.freeze(Time.zone.now) do
             Jobs.expects(:enqueue_at).with(7.days.from_now, :close_topic, all_of( has_key(:topic_id), has_key(:user_id) ))
-            Fabricate(:topic, auto_close_days: 7, user: Fabricate(:admin), category: Fabricate(:category, auto_close_days: 2))
+            Fabricate(:topic, auto_close_days: 7, user: Fabricate(:admin), category_id: Fabricate(:category, auto_close_days: 2).id)
           end
         end
 
@@ -1138,5 +1180,52 @@ describe Topic do
         expect { topic.recover! }.to_not change { category.reload.topic_count }
       end
     end
+  end
+
+  it "limits new users to max_topics_in_first_day and max_posts_in_first_day" do
+    SiteSetting.stubs(:max_topics_in_first_day).returns(1)
+    SiteSetting.stubs(:max_replies_in_first_day).returns(1)
+    RateLimiter.stubs(:disabled?).returns(false)
+    SiteSetting.stubs(:client_settings_json).returns(SiteSetting.client_settings_json_uncached)
+
+    start = Time.now.tomorrow.beginning_of_day
+
+    freeze_time(start)
+
+    user = Fabricate(:user)
+    topic_id = create_post(user: user).topic_id
+
+    freeze_time(start + 10.minutes)
+    lambda {
+      create_post(user: user)
+    }.should raise_exception
+
+    freeze_time(start + 20.minutes)
+    create_post(user: user, topic_id: topic_id)
+
+    freeze_time(start + 30.minutes)
+
+    lambda {
+      create_post(user: user, topic_id: topic_id)
+    }.should raise_exception
+  end
+
+  describe ".count_exceeds_minimun?" do
+    before { SiteSetting.stubs(:minimum_topics_similar).returns(20) }
+
+    context "when Topic count is geater than minimum_topics_similar" do
+      it "should be true" do
+        Topic.stubs(:count).returns(30)
+        expect(Topic.count_exceeds_minimum?).to be_true
+      end
+    end
+
+    context "when topic's count is less than minimum_topics_similar" do
+      it "should be false" do
+        Topic.stubs(:count).returns(10)
+        expect(Topic.count_exceeds_minimum?).to_not be_true
+      end
+    end
+
   end
 end

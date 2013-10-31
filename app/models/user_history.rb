@@ -17,7 +17,8 @@ class UserHistory < ActiveRecord::Base
                            :delete_site_customization,
                            :checked_for_custom_avatar,
                            :notified_about_avatar,
-                           :notified_about_sequential_replies)
+                           :notified_about_sequential_replies,
+                           :notitied_about_dominating_topic)
   end
 
   # Staff actions is a subset of all actions, used to audit actions taken by staff users.
@@ -47,8 +48,11 @@ class UserHistory < ActiveRecord::Base
     query
   end
 
-  def self.exists_for_user?(user, action_type)
-    self.where(target_user_id: user.id, action: UserHistory.actions[action_type]).exists?
+  def self.exists_for_user?(user, action_type, opts=nil)
+    opts = opts || {}
+    result = self.where(target_user_id: user.id, action: UserHistory.actions[action_type])
+    result = result.where(topic_id: opts[:topic_id]) if opts[:topic_id]
+    result.exists?
   end
 
   def new_value_is_json?
@@ -62,11 +66,11 @@ end
 
 # == Schema Information
 #
-# Table name: staff_action_logs
+# Table name: user_histories
 #
 #  id             :integer          not null, primary key
 #  action         :integer          not null
-#  staff_user_id  :integer          not null
+#  acting_user_id :integer
 #  target_user_id :integer
 #  details        :text
 #  created_at     :datetime         not null
@@ -77,12 +81,13 @@ end
 #  subject        :text
 #  previous_value :text
 #  new_value      :text
+#  topic_id       :integer
 #
 # Indexes
 #
-#  index_staff_action_logs_on_action_and_id          (action,id)
-#  index_staff_action_logs_on_staff_user_id_and_id   (staff_user_id,id)
-#  index_staff_action_logs_on_subject_and_id         (subject,id)
-#  index_staff_action_logs_on_target_user_id_and_id  (target_user_id,id)
+#  index_staff_action_logs_on_action_and_id                  (action,id)
+#  index_staff_action_logs_on_subject_and_id                 (subject,id)
+#  index_staff_action_logs_on_target_user_id_and_id          (target_user_id,id)
+#  index_user_histories_on_acting_user_id_and_action_and_id  (acting_user_id,action,id)
 #
 

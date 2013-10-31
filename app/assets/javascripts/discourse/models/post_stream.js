@@ -133,7 +133,6 @@ Discourse.PostStream = Em.Object.extend({
 
   hasNoFilters: Em.computed.empty('filterDesc'),
 
-
   /**
     Returns the window of posts above the current set in the stream, bound to the top of the stream.
     This is the collection we'll ask for when scrolling upwards.
@@ -238,7 +237,7 @@ Discourse.PostStream = Em.Object.extend({
     var postWeWant = this.get('posts').findProperty('post_number', opts.nearPost);
     if (postWeWant) {
       Discourse.TopicView.jumpToPost(topic.get('id'), opts.nearPost);
-      return Ember.Deferred.create(function(p) { p.reject(); });
+      return Ember.RSVP.reject();
     }
 
     // TODO: if we have all the posts in the filter, don't go to the server for them.
@@ -254,6 +253,8 @@ Discourse.PostStream = Em.Object.extend({
 
       if (opts.nearPost) {
         Discourse.TopicView.jumpToPost(topic.get('id'), opts.nearPost);
+      } else {
+        Discourse.TopicView.jumpToPost(topic.get('id'), 1);
       }
 
       Discourse.URL.set('queryParams', postStream.get('streamFilters'));
@@ -300,7 +301,7 @@ Discourse.PostStream = Em.Object.extend({
   **/
   prependMore: function() {
     var postStream = this,
-        rejectedPromise = Ember.Deferred.create(function(p) { p.reject(); });
+        rejectedPromise = Ember.RSVP.reject();
 
     // Make sure we can append more posts
     if (!postStream.get('canPrependMore')) { return rejectedPromise; }
@@ -683,8 +684,8 @@ Discourse.PostStream = Em.Object.extend({
 
 Discourse.PostStream.reopenClass({
 
-  create: function(args) {
-    var postStream = this._super(args);
+  create: function() {
+    var postStream = this._super.apply(this, arguments);
     postStream.setProperties({
       posts: Em.A(),
       stream: Em.A(),

@@ -124,6 +124,7 @@ var jsHintOpts = {
     "controllerFor",
     "testController",
     "containsInstance",
+    "parseHTML",
     "deepEqual",
     "notEqual",
     "Blob",
@@ -184,7 +185,5 @@ var jsHintOpts = {
 <%= jshint("#{Rails.root}/app/assets/javascripts/**/*.js",
            "/app/assets/javascripts/",
            [/external\//,
-            /external_development\//,
-            /external_production\//,
             /defer\//,
             /locales\//]) %>

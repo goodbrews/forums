@@ -687,9 +687,6 @@ describe Guardian do
 
   end
 
-
-
-
   context 'can_delete?' do
 
     it 'returns false with a nil object' do
@@ -697,6 +694,10 @@ describe Guardian do
     end
 
     context 'a Topic' do
+      before do
+        # pretend we have a real topic
+        topic.id = 9999999
+      end
 
       it 'returns false when not logged in' do
         Guardian.new.can_delete?(topic).should be_false
@@ -1193,6 +1194,72 @@ describe Guardian do
         it "is false for the user to change his own username" do
           Guardian.new(target_user).can_edit_username?(target_user).should be_false
         end
+      end
+    end
+
+    context 'when editing is disabled in preferences' do
+      before do
+        SiteSetting.stubs(:username_change_period).returns(0)
+      end
+
+      include_examples "staff can always change usernames"
+
+      it "is false for the user to change his own username" do
+        Guardian.new(user).can_edit_username?(user).should be_false
+      end
+    end
+  end
+
+  describe "can_edit_email?" do
+    context 'when allowed in settings' do
+      before do
+        SiteSetting.stubs(:email_editable?).returns(true)
+      end
+
+      it "is false when not logged in" do
+        Guardian.new(nil).can_edit_email?(build(:user, created_at: 1.minute.ago)).should be_false
+      end
+
+      it "is false for regular users to edit another user's email" do
+        Guardian.new(build(:user)).can_edit_email?(build(:user, created_at: 1.minute.ago)).should be_false
+      end
+
+      it "is true for a regular user to edit his own email" do
+        Guardian.new(user).can_edit_email?(user).should be_true
+      end
+
+      it "is true for moderators" do
+        Guardian.new(moderator).can_edit_email?(user).should be_true
+      end
+
+      it "is true for admins" do
+        Guardian.new(admin).can_edit_email?(user).should be_true
+      end
+    end
+
+    context 'when not allowed in settings' do
+      before do
+        SiteSetting.stubs(:email_editable?).returns(false)
+      end
+
+      it "is false when not logged in" do
+        Guardian.new(nil).can_edit_email?(build(:user, created_at: 1.minute.ago)).should be_false
+      end
+
+      it "is false for regular users to edit another user's email" do
+        Guardian.new(build(:user)).can_edit_email?(build(:user, created_at: 1.minute.ago)).should be_false
+      end
+
+      it "is false for a regular user to edit his own email" do
+        Guardian.new(user).can_edit_email?(user).should be_false
+      end
+
+      it "is true for admins" do
+        Guardian.new(admin).can_edit_email?(user).should be_true
+      end
+
+      it "is true for moderators" do
+        Guardian.new(moderator).can_edit_email?(user).should be_true
       end
     end
   end

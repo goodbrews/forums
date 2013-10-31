@@ -373,6 +373,7 @@ de:
     private_message_info:
       title: "Privates Gespräch"
       invite: "Andere einladen..."
+      remove_allowed_user: "Willst du {{name}} wirklich aus diesem Gespräch entfernen?"
 
     email: 'Mail'
     username: 'Benutzername'
@@ -521,18 +522,10 @@ de:
       title_with_attachments: "Bild oder Datei hochladen"
       from_my_computer: "Von meinem Gerät"
       from_the_web: "Aus dem Web"
-      add_title: "Bild hinzufügen"
-      add_title_with_attachments: "Bild oder Datei hinzufügen"
-      remote_title: "Entferntes Bild"
-      remote_title_with_attachments: "Entferntes Bild oder Datei"
       remote_tip: "Gib die Adresse eines Bildes wie folgt ein: http://example.com/image.jpg"
       remote_tip_with_attachments: "Gib die Adresse eines Bildes oder Datei wie folgt ein http://example.com/file.ext (Erlaubte Dateiendungen: {{authorized_extensions}})."
-      local_title: "Lokales Bild"
-      local_title_with_attachments: "Lokales Bild oder Datei"
       local_tip: "Klicke hier, um ein Bild von deinem Gerät zu wählen."
       local_tip_with_attachments: "Klicke hier, um ein Bild oder eine Datei von deinem Gerät zu wählen (Erlaubte Dateiendungen: {{authorized_extensions}})"
-      upload_title: "Bild hochladen"
-      upload_title_with_attachments: "Bild oder Datei hochladen"
       uploading: "Hochgeladen..."
 
     search:
@@ -557,7 +550,7 @@ de:
 
     topics:
       none:
-        favorited: "Du hast noch keine Themen favorisierst. Um ein Thema zu favorisieren, klicke auf den Stern neben dem Titel."
+        favorited: "Du hast noch keine Themen favorisiert. Um ein Thema zu favorisieren, klicke auf den Stern neben dem Titel."
         unread: "Du hast alle Themen gelesen."
         new: "Es gibt für dich keine neuen Themen."
         read: "Du hast bislang keine Themen gelesen."
@@ -581,7 +574,6 @@ de:
       title: Themadetails
 
     topic:
-      create_in: 'Neues Thema in {{categoryName}}'
       create: 'Neues Thema'
       create_long: 'Neues Thema beginnen'
       private_message: 'Beginne ein privates Gespräch'
@@ -932,7 +924,6 @@ de:
       none: '(keine Kategorie)'
       edit: 'Bearbeiten'
       edit_long: "Kategorie bearbeiten"
-      edit_uncategorized: "Unkategorisierte bearbeiten"
       view: 'Zeige Themen dieser Kategorie'
       general: 'Generell'
       settings: 'Einstellungen'
@@ -1058,7 +1049,6 @@ de:
 
   # This section is exported to the javascript for i18n in the admin section
   admin_js:
-    type_to_filter: "Tippe etwas ein, um zu filtern..."
 
     admin:
       title: 'Discourse Administrator'

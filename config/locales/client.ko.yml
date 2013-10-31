@@ -432,7 +432,6 @@ ko:
       title: 주제 랭킹 세부 사항
 
     topic:
-      create_in: '{{categoryName}} 주제를 만듭니다'
       create: '주제 만들기'
       create_long: '새로운 주제를 개설합니다'
       private_message: '개인 메시지를 시작합니다'
@@ -733,7 +732,6 @@ ko:
       none: '(카테고리 없음)'
       edit: '편집'
       edit_long: "카테고리 편집"
-      edit_uncategorized: "분류되지 않은 편집"
       view: '카테고리 항목보기'
       delete: '카테고리 지우기'
       create: '카테고리 만들기'
@@ -843,7 +841,6 @@ ko:
 
   # This section is exported to the javascript for i18n in the admin section
   admin_js:
-    type_to_filter: "필터를 입력하세요"
 
     admin:
       title: 'Discourse 관리자'

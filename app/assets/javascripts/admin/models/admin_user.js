@@ -8,6 +8,34 @@
 **/
 Discourse.AdminUser = Discourse.User.extend({
 
+  /**
+    Generates an API key for the user. Will regenerate if they already have one.
+
+    @method generateApiKey
+    @returns {Promise} a promise that resolves to the newly generated API key
+  **/
+  generateApiKey: function() {
+    var self = this;
+    return Discourse.ajax("/admin/users/" + this.get('id') + "/generate_api_key", {type: 'POST'}).then(function (result) {
+      var apiKey = Discourse.ApiKey.create(result.api_key);
+      self.set('api_key', apiKey);
+      return apiKey;
+    });
+  },
+
+  /**
+    Revokes a user's current API key
+
+    @method revokeApiKey
+    @returns {Promise} a promise that resolves when the API key has been deleted
+  **/
+  revokeApiKey: function() {
+    var self = this;
+    return Discourse.ajax("/admin/users/" + this.get('id') + "/revoke_api_key", {type: 'DELETE'}).then(function (result) {
+      self.set('api_key', null);
+    });
+  },
+
   deleteAllPosts: function() {
     this.set('can_delete_all_posts', false);
     var user = this;
@@ -236,6 +264,7 @@ Discourse.AdminUser = Discourse.User.extend({
       if (block) {
         formData["block_email"] = true;
         formData["block_urls"] = true;
+        formData["block_ip"] = true;
       }
       Discourse.ajax("/admin/users/" + user.get('id') + '.json', {
         type: 'DELETE',
@@ -282,7 +311,7 @@ Discourse.AdminUser = Discourse.User.extend({
 
   deleteAsSpammer: function(successCallback) {
     var user = this;
-    var message = I18n.t('flagging.delete_confirm', {posts: user.get('post_count'), topics: user.get('topic_count'), email: user.get('email')});
+    var message = I18n.t('flagging.delete_confirm', {posts: user.get('post_count'), topics: user.get('topic_count'), email: user.get('email'), ip_address: user.get('ip_address')});
     var buttons = [{
       "label": I18n.t("composer.cancel"),
       "class": "cancel",
@@ -293,7 +322,7 @@ Discourse.AdminUser = Discourse.User.extend({
       "callback": function() {
         Discourse.ajax("/admin/users/" + user.get('id') + '.json', {
           type: 'DELETE',
-          data: {delete_posts: true, block_email: true, block_urls: true, context: window.location.pathname}
+          data: {delete_posts: true, block_email: true, block_urls: true, block_ip: true, context: window.location.pathname}
         }).then(function(data) {
           if (data.deleted) {
             bootbox.alert(I18n.t("admin.user.deleted"), function() {

@@ -94,3 +94,4 @@ config/version.rb
 .ruby-version
 .ruby-gemset
 .rbenv
+bundler_stubs/*

@@ -43,6 +43,7 @@ class User < ActiveRecord::Base
   has_many :secure_categories, through: :groups, source: :categories
 
   has_one :user_search_data, dependent: :destroy
+  has_one :api_key, dependent: :destroy
 
   belongs_to :uploaded_avatar, class_name: 'Upload', dependent: :destroy
 
@@ -51,6 +52,7 @@ class User < ActiveRecord::Base
   validates :email, presence: true, uniqueness: true
   validates :email, email: true, if: :email_changed?
   validate :password_validator
+  validates :ip_address, allowed_ip_address: {on: :create, message: :signup_not_allowed}
 
   before_save :cook
   before_save :update_username_lower
@@ -122,19 +124,19 @@ class User < ActiveRecord::Base
   end
 
   def self.find_by_username_or_email(username_or_email)
-    conditions = if username_or_email.include?('@')
-      { email: Email.downcase(username_or_email) }
+    if username_or_email.include?('@')
+      find_by_email(username_or_email)
     else
-      { username_lower: username_or_email.downcase }
+      find_by_username(username_or_email)
     end
+  end
 
-    users = User.where(conditions).to_a
+  def self.find_by_email(email)
+    where(email: Email.downcase(email)).first
+  end
 
-    if users.size > 1
-      raise Discourse::TooManyMatches
-    else
-      users.first
-    end
+  def self.find_by_username(username)
+    where(username_lower: username.downcase).first
   end
 
   def enqueue_welcome_message(message_type)
@@ -249,6 +251,10 @@ class User < ActiveRecord::Base
     self.password_hash == hash_password(password, salt)
   end
 
+  def new_user?
+    created_at >= 24.hours.ago || trust_level == TrustLevel.levels[:newuser]
+  end
+
   def seen_before?
     last_seen_at.present?
   end
@@ -259,7 +265,7 @@ class User < ActiveRecord::Base
 
   def update_visit_record!(date)
     unless has_visit_record?(date)
-      update_column(:days_visited, days_visited + 1)
+      user_stat.update_column(:days_visited, user_stat.days_visited + 1)
       user_visits.create!(visited_at: date)
     end
   end
@@ -270,25 +276,17 @@ class User < ActiveRecord::Base
     end
   end
 
-  def update_last_seen!(now=nil)
-    now ||= Time.zone.now
+
+  def update_last_seen!(now=Time.zone.now)
     now_date = now.to_date
-
     # Only update last seen once every minute
-    redis_key = "user:#{self.id}:#{now_date}"
-    if $redis.setnx(redis_key, "1")
-      $redis.expire(redis_key, SiteSetting.active_user_rate_limit_secs)
+    redis_key = "user:#{id}:#{now_date}"
+    return unless $redis.setnx(redis_key, "1")
 
-      update_visit_record!(now_date)
-
-      # using update_column to avoid the AR transaction
-      # Keep track of our last visit
-      if seen_before? && (self.last_seen_at < (now - SiteSetting.previous_visit_timeout_hours.hours))
-        previous_visit_at = last_seen_at
-        update_column(:previous_visit_at, previous_visit_at)
-      end
-      update_column(:last_seen_at, now)
-    end
+    $redis.expire(redis_key, SiteSetting.active_user_rate_limit_secs)
+    update_previous_visit(now)
+    # using update_column to avoid the AR transaction
+    update_column(:last_seen_at, now)
   end
 
   def self.gravatar_template(email)
@@ -316,39 +314,6 @@ class User < ActiveRecord::Base
     uploaded_avatar_path || User.gravatar_template(email)
   end
 
-  # Updates the denormalized view counts for all users
-  def self.update_view_counts
-
-    # NOTE: we only update the counts for users we have seen in the last hour
-    #  this avoids a very expensive query that may run on the entire user base
-    #  we also ensure we only touch the table if data changes
-
-    # Update denormalized topics_entered
-    exec_sql "UPDATE users SET topics_entered = X.c
-             FROM
-            (SELECT v.user_id,
-                    COUNT(DISTINCT parent_id) AS c
-             FROM views AS v
-             WHERE parent_type = 'Topic'
-             GROUP BY v.user_id) AS X
-            WHERE
-                    X.user_id = users.id AND
-                    X.c <> topics_entered AND
-                    users.last_seen_at > :seen_at
-    ", seen_at: 1.hour.ago
-
-    # Update denormalzied posts_read_count
-    exec_sql "UPDATE users SET posts_read_count = X.c
-              FROM
-              (SELECT pt.user_id,
-                      COUNT(*) AS c
-               FROM post_timings AS pt
-               GROUP BY pt.user_id) AS X
-               WHERE X.user_id = users.id AND
-                     X.c <> posts_read_count AND
-                     users.last_seen_at > :seen_at
-    ", seen_at: 1.hour.ago
-  end
 
   # The following count methods are somewhat slow - definitely don't use them in a loop.
   # They might need to be denormalized
@@ -455,20 +420,6 @@ class User < ActiveRecord::Base
     end
   end
 
-  MAX_TIME_READ_DIFF = 100
-  # attempt to add total read time to user based on previous time this was called
-  def update_time_read!
-    last_seen_key = "user-last-seen:#{id}"
-    last_seen = $redis.get(last_seen_key)
-    if last_seen.present?
-      diff = (Time.now.to_f - last_seen.to_f).round
-      if diff > 0 && diff < MAX_TIME_READ_DIFF
-        User.where(id: id, time_read: time_read).update_all ["time_read = time_read + ?", diff]
-      end
-    end
-    $redis.set(last_seen_key, Time.now.to_f)
-  end
-
   def readable_name
     return "#{name} (#{username})" if name.present? && name != username
     username
@@ -483,18 +434,6 @@ class User < ActiveRecord::Base
     where('created_at > ?', sinceDaysAgo.days.ago).group('date(created_at)').order('date(created_at)').count
   end
 
-  def update_topic_reply_count
-    self.topic_reply_count =
-        Topic
-        .where(['id in (
-              SELECT topic_id FROM posts p
-              JOIN topics t2 ON t2.id = p.topic_id
-              WHERE p.deleted_at IS NULL AND
-                t2.user_id <> p.user_id AND
-                p.user_id = ?
-              )', self.id])
-        .count
-  end
 
   def secure_category_ids
     cats = self.staff? ? Category.where(read_restricted: true) : secure_categories.references(:categories)
@@ -511,7 +450,7 @@ class User < ActiveRecord::Base
     admin = Discourse.system_user
     topic_links.includes(:post).each do |tl|
       begin
-        PostAction.act(admin, tl.post, PostActionType.types[:spam])
+        PostAction.act(admin, tl.post, PostActionType.types[:spam], message: I18n.t('flag_reason.spam_hosts'))
       rescue PostAction::AlreadyActed
         # If the user has already acted, just ignore it
       end
@@ -520,6 +459,30 @@ class User < ActiveRecord::Base
 
   def has_uploaded_avatar
     uploaded_avatar.present?
+  end
+
+  def added_a_day_ago?
+    created_at > 1.day.ago
+  end
+
+  def update_avatar(upload)
+    self.uploaded_avatar_template = nil
+    self.uploaded_avatar = upload
+    self.use_uploaded_avatar = true
+    self.save!
+  end
+
+  def generate_api_key(created_by)
+    if api_key.present?
+      api_key.regenerate!(created_by)
+      api_key
+    else
+      ApiKey.create(user: self, key: SecureRandom.hex(32), created_by: created_by)
+    end
+  end
+
+  def revoke_api_key
+    ApiKey.where(user_id: self.id).delete_all
   end
 
   protected
@@ -534,19 +497,12 @@ class User < ActiveRecord::Base
 
   def update_tracked_topics
     return unless auto_track_topics_after_msecs_changed?
-
-    where_conditions = {notifications_reason_id: nil, user_id: id}
-    if auto_track_topics_after_msecs < 0
-      TopicUser.where(where_conditions).update_all({notification_level: TopicUser.notification_levels[:regular]})
-    else
-      TopicUser.where(where_conditions).update_all(["notification_level = CASE WHEN total_msecs_viewed < ? THEN ? ELSE ? END",
-                            auto_track_topics_after_msecs, TopicUser.notification_levels[:regular], TopicUser.notification_levels[:tracking]])
-    end
+    TrackedTopicsUpdater.new(id, auto_track_topics_after_msecs).call
   end
 
   def create_user_stat
     stat = UserStat.new
-    stat.user_id = self.id
+    stat.user_id = id
     stat.save!
   end
 
@@ -610,7 +566,20 @@ class User < ActiveRecord::Base
     end
   end
 
+
   private
+
+  def previous_visit_at_update_required?(timestamp)
+    seen_before? &&
+      (last_seen_at < (timestamp - SiteSetting.previous_visit_timeout_hours.hours))
+  end
+
+  def update_previous_visit(timestamp)
+    update_visit_record!(timestamp.to_date)
+    if previous_visit_at_update_required?(timestamp)
+      update_column(:previous_visit_at, last_seen_at)
+    end
+  end
 
 end
 
@@ -644,8 +613,6 @@ end
 #  approved                      :boolean          default(FALSE), not null
 #  approved_by_id                :integer
 #  approved_at                   :datetime
-#  topics_entered                :integer          default(0), not null
-#  posts_read_count              :integer          default(0), not null
 #  digest_after_days             :integer
 #  previous_visit_at             :datetime
 #  banned_at                     :datetime
@@ -654,22 +621,18 @@ end
 #  auto_track_topics_after_msecs :integer
 #  views                         :integer          default(0), not null
 #  flag_level                    :integer          default(0), not null
-#  time_read                     :integer          default(0), not null
-#  days_visited                  :integer          default(0), not null
 #  ip_address                    :string
 #  new_topic_duration_minutes    :integer
 #  external_links_in_new_tab     :boolean          default(FALSE), not null
 #  enable_quoting                :boolean          default(TRUE), not null
 #  moderator                     :boolean          default(FALSE)
-#  likes_given                   :integer          default(0), not null
-#  likes_received                :integer          default(0), not null
-#  topic_reply_count             :integer          default(0), not null
 #  blocked                       :boolean          default(FALSE)
 #  dynamic_favicon               :boolean          default(FALSE), not null
 #  title                         :string(255)
 #  use_uploaded_avatar           :boolean          default(FALSE)
 #  uploaded_avatar_template      :string(255)
 #  uploaded_avatar_id            :integer
+#  email_always                  :boolean          default(FALSE), not null
 #
 # Indexes
 #

@@ -8,7 +8,8 @@ class ComposerMessagesFinder
   def find
     check_education_message ||
     check_avatar_notification ||
-    check_sequential_replies
+    check_sequential_replies ||
+    check_dominating_topic
   end
 
   # Determines whether to show the user education text
@@ -17,11 +18,11 @@ class ComposerMessagesFinder
       count = @user.created_topic_count
       education_key = :education_new_topic
     else
-      count = @user.topic_reply_count
+      count = @user.post_count
       education_key = :education_new_reply
     end
 
-    if count <= SiteSetting.educate_until_posts
+    if count < SiteSetting.educate_until_posts
       education_posts_text = I18n.t('education.until_posts', count: SiteSetting.educate_until_posts)
       return {templateName: 'composer/education',
               wait_for_typing: true,
@@ -56,14 +57,11 @@ class ComposerMessagesFinder
     # We only care about replies to topics
     return unless replying? && @details[:topic_id] &&
 
-                  # For users who are not new
-                  @user.has_trust_level?(:basic) &&
-
-                  # And who have posted enough topics
-                  (@user.topic_reply_count > SiteSetting.educate_until_posts) &&
+                  # And who have posted enough
+                  (@user.post_count >= SiteSetting.educate_until_posts) &&
 
                   # And who haven't been notified about sequential replies already
-                  (!UserHistory.exists_for_user?(@user, :notified_about_sequential_replies))
+                  !UserHistory.exists_for_user?(@user, :notified_about_sequential_replies, topic_id: @details[:topic_id])
 
     # Count the topics made by this user in the last day
     recent_posts_user_ids = Post.where(topic_id: @details[:topic_id])
@@ -77,11 +75,42 @@ class ComposerMessagesFinder
               recent_posts_user_ids.detect {|u| u != @user.id }
 
     # If we got this far, log that we've nagged them about the sequential replies
-    UserHistory.create!(action: UserHistory.actions[:notified_about_sequential_replies], target_user_id: @user.id )
+    UserHistory.create!(action: UserHistory.actions[:notified_about_sequential_replies],
+                        target_user_id: @user.id,
+                        topic_id: @details[:topic_id] )
 
     {templateName: 'composer/education',
      wait_for_typing: true,
      body: PrettyText.cook(I18n.t('education.sequential_replies')) }
+  end
+
+  def check_dominating_topic
+
+    # We only care about replies to topics for a user who has posted enough
+    return unless replying? &&
+                  @details[:topic_id] &&
+                  (@user.post_count >= SiteSetting.educate_until_posts) &&
+                  !UserHistory.exists_for_user?(@user, :notitied_about_dominating_topic, topic_id: @details[:topic_id])
+
+    topic = Topic.where(id: @details[:topic_id]).first
+    return if topic.blank? ||
+              topic.user_id == @user.id ||
+              topic.posts_count < SiteSetting.best_of_posts_required
+
+    posts_by_user = @user.posts.where(topic_id: topic.id).count
+
+    ratio = (posts_by_user.to_f / topic.posts_count.to_f)
+    return if ratio < (SiteSetting.dominating_topic_minimum_percent.to_f / 100.0)
+
+    # Log the topic notification
+    UserHistory.create!(action: UserHistory.actions[:notitied_about_dominating_topic],
+                        target_user_id: @user.id,
+                        topic_id: @details[:topic_id])
+
+
+    {templateName: 'composer/education',
+     wait_for_typing: true,
+     body: PrettyText.cook(I18n.t('education.dominating_topic', percent: (ratio * 100).round)) }
   end
 
   private

@@ -8,9 +8,13 @@
 **/
 Discourse.ListCategoriesRoute = Discourse.Route.extend({
 
+  template: function(){
+    return Discourse.SiteSettings.enable_wide_category_list ? 'listWideCategories' : 'listCategories';
+  }.property(),
+
   redirect: function() { Discourse.redirectIfLoginRequired(this); },
 
-  events: {
+  actions: {
     createCategory: function() {
       Discourse.Route.showModal(this, 'editCategory', Discourse.Category.create({
         color: 'AB9364', text_color: 'FFFFFF', hotness: 5, group_permissions: [{group_name: "everyone", permission_type: 1}],
@@ -32,7 +36,7 @@ Discourse.ListCategoriesRoute = Discourse.Route.extend({
   },
 
   renderTemplate: function() {
-    this.render('listCategories', { into: 'list', outlet: 'listView' });
+    this.render(this.get('template'), { into: 'list', outlet: 'listView' });
   },
 
   afterModel: function(categoryList) {

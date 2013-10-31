@@ -302,10 +302,8 @@ pt:
     upload_selector:
       from_my_computer: "Do meu dispositivo"
       from_the_web: "Da internet"
-      add_title: "Adicionar Imagem"
       remote_tip: "insere o endereço de uma imagem no formato http://example.com/image.jpg"
       local_tip: "clica para selecionar uma imagem no teu dispositivo."
-      upload_title: "Enviar"
       uploading: "A enviar imagem"
 
     search:
@@ -332,7 +330,6 @@ pt:
       footer: "Não há mais tópicos neste categoria. <a href=\"/categories\">Procurar todas as categorias</a> ou <a href=\"/\">ver tópicos populares</a>"
 
     topic:
-      create_in: 'Criar Tópico sobre {{categoryName}}'
       create: 'Criar Tópico'
       create_long: 'Criar um novo Tópico'
       private_message: 'Começar uma nova conversa privada'
@@ -605,7 +602,6 @@ pt:
 
   # This section is exported to the javascript for i18n in the admin section
   admin_js:
-    type_to_filter: "escreve para filtrar..."
 
     admin:
       title: 'Discourse Admin'

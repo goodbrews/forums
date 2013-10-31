@@ -43,6 +43,8 @@ Discourse::Application.routes.draw do
       put 'unban'
       put 'revoke_admin', constraints: AdminConstraint.new
       put 'grant_admin', constraints: AdminConstraint.new
+      post 'generate_api_key', constraints: AdminConstraint.new
+      delete 'revoke_api_key', constraints: AdminConstraint.new
       put 'revoke_moderation', constraints: AdminConstraint.new
       put 'grant_moderation', constraints: AdminConstraint.new
       put 'approve'
@@ -65,9 +67,10 @@ Discourse::Application.routes.draw do
     end
 
     scope '/logs' do
-      resources :staff_action_logs, only: [:index]
-      resources :screened_emails,   only: [:index]
-      resources :screened_urls,     only: [:index]
+      resources :staff_action_logs,     only: [:index]
+      resources :screened_emails,       only: [:index]
+      resources :screened_ip_addresses, only: [:index, :create, :update, :destroy]
+      resources :screened_urls,         only: [:index]
     end
 
     get 'customize' => 'site_customizations#index', constraints: AdminConstraint.new
@@ -88,7 +91,9 @@ Discourse::Application.routes.draw do
     end
     resources :api, only: [:index], constraints: AdminConstraint.new do
       collection do
-        post 'generate_key'
+        post 'key' => 'api#create_master_key'
+        put 'key' => 'api#regenerate_key'
+        delete 'key' => 'api#revoke_key'
       end
     end
   end
@@ -187,6 +192,7 @@ Discourse::Application.routes.draw do
 
   resources :categories, :except => :show
   get 'category/:id/show' => 'categories#show'
+  post 'category/:category_id/move' => 'categories#move', as: 'category_move'
 
   get 'category/:category.rss' => 'list#category_feed', format: :rss, as: 'category_feed'
   get 'category/:category' => 'list#category', as: 'category_list'
@@ -197,13 +203,20 @@ Discourse::Application.routes.draw do
   get 'popular/more' => 'list#popular_redirect'
 
   [:latest, :hot].each do |filter|
-    get "#{filter}.rss" => "list##{filter}_feed", format: :rss, as: "#{filter}_feed", filter: filter
+    get "#{filter}.rss" => "list##{filter}_feed", format: :rss
   end
 
   [:latest, :hot, :favorited, :read, :posted, :unread, :new].each do |filter|
     get "#{filter}" => "list##{filter}"
     get "#{filter}/more" => "list##{filter}"
+
+    get "category/:category/l/#{filter}" => "list##{filter}"
+    get "category/:category/l/#{filter}/more" => "list##{filter}"
+    get "category/:parent_category/:category/l/#{filter}" => "list##{filter}"
+    get "category/:parent_category/:category/l/#{filter}/more" => "list##{filter}"
   end
+
+  get 'category/:parent_category/:category' => 'list#category', as: 'category_list_parent'
 
   get 'search' => 'search#query'
 

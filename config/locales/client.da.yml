@@ -348,10 +348,8 @@ da:
       title: "Indsæt billede"
       from_my_computer: "Fra min computer"
       from_the_web: "Fra nettet"
-      add_title: "Indsæt billede"
       remote_tip: "skriv adressen på et billede i formen http://example.com/billede.jpg"
       local_tip: "klik for at vælge et billede fra din computer."
-      upload_title: "Upload"
       uploading: "Uploader billede"
 
     search:
@@ -387,7 +385,6 @@ da:
         category: "Der er ikke flere emner i kategorien {{category}}."
 
     topic:
-      create_in: 'Opret emne i kategorien {{categoryName}}'
       create: 'Opret emne'
       create_long: 'Opret et nyt emne i debatten'
       private_message: 'Start en privat samtale'
@@ -686,7 +683,6 @@ da:
 
   # This section is exported to the javascript for i18n in the admin section
   admin_js:
-    type_to_filter: "type to filter..."
 
     admin:
       title: 'Discourse Admin'

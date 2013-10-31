@@ -1,15 +1,9 @@
-class CategoryDetailedSerializer < ApplicationSerializer
+class CategoryDetailedSerializer < BasicCategorySerializer
 
-  attributes :id,
-             :name,
-             :color,
-             :text_color,
-             :slug,
-             :topic_count,
+  attributes :post_count,
              :topics_week,
              :topics_month,
              :topics_year,
-             :description,
              :description_excerpt,
              :is_uncategorized
 
@@ -29,7 +23,7 @@ class CategoryDetailedSerializer < ApplicationSerializer
   end
 
   def is_uncategorized
-    name == SiteSetting.uncategorized_name
+    object.id == SiteSetting.uncategorized_category_id
   end
 
   def include_is_uncategorized?

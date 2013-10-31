@@ -15,7 +15,12 @@ Discourse.PreferencesRoute = Discourse.RestrictedUserRoute.extend({
     this.render('preferences', { into: 'user', outlet: 'userOutlet', controller: 'preferences' });
   },
 
-  events: {
+  setupController: function(controller, model) {
+    controller.set('model', model);
+    this.controllerFor('user').set('indexStream', false);
+  },
+
+  actions: {
     showAvatarSelector: function() {
       Discourse.Route.showModal(this, 'avatarSelector');
       // all the properties needed for displaying the avatar selector modal
