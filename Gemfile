@@ -12,7 +12,7 @@ end
 
 module ::Kernel
   def rails4?
-    !!ENV["RAILS4"]
+    !ENV["RAILS3"]
   end
 end
 
@@ -35,7 +35,7 @@ end
 gem 'seed-fu' , github: 'SamSaffron/seed-fu'
 
 if rails4?
-  gem 'rails', :git => 'git://github.com/rails/rails.git', :branch => '4-0-stable'
+  gem 'rails'
   gem 'redis-rails', :git => 'git://github.com/SamSaffron/redis-store.git'
   gem 'rails-observers'
   gem 'actionpack-action_caching'
@@ -64,7 +64,7 @@ gem 'ember-source', '1.0.0.rc6.2'
 gem 'handlebars-source', '1.0.12'
 gem 'barber'
 
-gem 'vestal_versions', git: 'https://github.com/zhangyuan/vestal_versions'
+gem 'vestal_versions', git: 'https://github.com/SamSaffron/vestal_versions'
 
 gem 'message_bus', git: 'https://github.com/SamSaffron/message_bus'
 gem 'rails_multisite', path: 'vendor/gems/rails_multisite'

@@ -722,6 +722,7 @@ en:
     dominating_topic_minimum_percent: "What percentage of posts a user has to make in a topic before we consider it dominating."
 
     enable_names: "Allow users to show their full names"
+    display_name_on_posts: "Also show a user's full name on their posts"
 
   notification_types:
     mentioned: "%{display_username} mentioned you in %{link}"
@@ -777,6 +778,7 @@ en:
     activate_email: "You're almost done! We sent an activation email to <b>%{email}</b>. Please follow the instructions in the email to activate your account."
     not_activated: "You can't log in yet. We sent an activation email to you. Please follow the instructions in the email to activate your account."
     banned: "You can't log in until %{date}."
+    banned_with_reason: "You can't log in until %{date}. The reason you were banned: %{reason}"
     errors: "%{errors}"
     not_available: "Not available. Try %{suggestion}?"
     something_already_taken: "Something went wrong, perhaps the username or email is already registered. Try the forgot password link."
